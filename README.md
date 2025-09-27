@@ -40,7 +40,7 @@ CapitalX offers a comprehensive 3-stage tier investment system:
 The [.env](file:///c%3A/Users/money/HustleProjects/BevanTheDev/Telegrambot/.env) file is included in [.gitignore](file:///c%3A/Users/money/HustleProjects/BevanTheDev/Telegrambot/.gitignore) to prevent accidental commits.
 See [SECURITY_NOTICE.md](file:///c%3A/Users/money/HustleProjects/BevanTheDev/Telegrambot/SECURITY_NOTICE.md) for more information on secret management.
 
-### Running the Bot
+### Running the Bot Locally
 Simply run:
 ```bash
 python main.py
@@ -50,6 +50,15 @@ Or use the provided batch file:
 ```bash
 run_beginner.bat
 ```
+
+## Deployment
+
+### Deploying to Render
+See [RENDER_DEPLOYMENT_GUIDE.md](file:///c%3A/Users/money/HustleProjects/BevanTheDev/Telegrambot/RENDER_DEPLOYMENT_GUIDE.md) for detailed instructions on deploying to Render.
+
+### Environment Variables
+When deploying, make sure to set the following environment variable:
+- `TELEGRAM_BOT_TOKEN` - Your actual bot token from [@BotFather](https://t.me/BotFather)
 
 ## Bot Usage
 The bot provides a simplified menu structure with clear options:
