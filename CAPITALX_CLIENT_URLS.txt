@@ -1,0 +1,6 @@
+# CapitalX Client URLs
+# These are URLs that can be shared with clients
+# Generated on 2025-09-27
+
+https://capitalx-rtn.onrender.com/
+https://capitalx-rtn.onrender.com/register/

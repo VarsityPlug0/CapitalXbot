@@ -6,20 +6,46 @@ Handles SQLite database operations for user data and command logging.
 import sqlite3
 import logging
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Generator
+from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
-
 DATABASE_FILE = "telegram_bot.db"
 
-def get_connection():
-    """Get database connection."""
-    return sqlite3.connect(DATABASE_FILE)
+@contextmanager
+def get_db_connection() -> Generator[sqlite3.Connection, None, None]:
+    """Context manager for database connections.
+    
+    Yields:
+        sqlite3.Connection: Database connection object
+        
+    Raises:
+        sqlite3.Error: If there's an error connecting to the database
+    """
+    conn: Optional[sqlite3.Connection] = None
+    try:
+        conn = sqlite3.connect(DATABASE_FILE)
+        # Enable foreign key constraints
+        conn.execute("PRAGMA foreign_keys = ON")
+        yield conn
+    except sqlite3.Error as e:
+        if conn:
+            conn.rollback()
+        logger.error(f"Database error: {e}")
+        raise
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        logger.error(f"Unexpected error: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
 
 def init_database():
     """Initialize the database with required tables."""
     try:
-        with get_connection() as conn:
+        with get_db_connection() as conn:
             cursor = conn.cursor()
             
             # Create users table
@@ -46,6 +72,23 @@ def init_database():
                 )
             """)
             
+            # Create investments table to track user investments per tier
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS investments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    chat_id INTEGER NOT NULL,
+                    tier_level INTEGER NOT NULL,
+                    investment_amount REAL NOT NULL,
+                    expected_return REAL NOT NULL,
+                    duration_hours INTEGER NOT NULL,
+                    invested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    completed_at TIMESTAMP,
+                    status TEXT DEFAULT 'active',
+                    FOREIGN KEY (chat_id) REFERENCES users (chat_id),
+                    UNIQUE(chat_id, tier_level, status)
+                )
+            """)
+            
             conn.commit()
             logger.info("Database tables created successfully")
             
@@ -68,7 +111,7 @@ def add_user(chat_id: int, username: Optional[str] = None,
         bool: True if successful, False otherwise
     """
     try:
-        with get_connection() as conn:
+        with get_db_connection() as conn:
             cursor = conn.cursor()
             
             # Insert or update user
@@ -97,7 +140,7 @@ def log_command(chat_id: int, command: str) -> bool:
         bool: True if successful, False otherwise
     """
     try:
-        with get_connection() as conn:
+        with get_db_connection() as conn:
             cursor = conn.cursor()
             
             cursor.execute("""
@@ -113,6 +156,140 @@ def log_command(chat_id: int, command: str) -> bool:
         logger.error(f"Error logging command for user {chat_id}: {e}")
         return False
 
+def record_investment(chat_id: int, tier_level: int, investment_amount: float, 
+                     expected_return: float, duration_hours: int) -> bool:
+    """
+    Record a user's investment in a specific tier.
+    
+    Args:
+        chat_id: Telegram chat ID
+        tier_level: Tier level (1-10)
+        investment_amount: Amount invested
+        expected_return: Expected return amount
+        duration_hours: Duration in hours
+    
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Check if user already has an active investment in this tier
+            cursor.execute("""
+                SELECT id FROM investments 
+                WHERE chat_id = ? AND tier_level = ? AND status = 'active'
+            """, (chat_id, tier_level))
+            
+            existing_investment = cursor.fetchone()
+            if existing_investment:
+                logger.info(f"User {chat_id} already has an active investment in tier {tier_level}")
+                return False
+            
+            # Record the new investment
+            cursor.execute("""
+                INSERT INTO investments (chat_id, tier_level, investment_amount, expected_return, duration_hours)
+                VALUES (?, ?, ?, ?, ?)
+            """, (chat_id, tier_level, investment_amount, expected_return, duration_hours))
+            
+            conn.commit()
+            logger.info(f"Investment recorded for user {chat_id} in tier {tier_level}")
+            return True
+            
+    except Exception as e:
+        logger.error(f"Error recording investment for user {chat_id}: {e}")
+        return False
+
+def get_user_investments(chat_id: int) -> List[Dict[str, Any]]:
+    """
+    Get all investments for a specific user.
+    
+    Args:
+        chat_id: Telegram chat ID
+    
+    Returns:
+        List of investment dictionaries
+    """
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT tier_level, investment_amount, expected_return, duration_hours, invested_at, status
+                FROM investments
+                WHERE chat_id = ?
+                ORDER BY invested_at DESC
+            """, (chat_id,))
+            
+            columns = [description[0] for description in cursor.description]
+            investments = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            
+            return investments
+            
+    except Exception as e:
+        logger.error(f"Error retrieving investments for user {chat_id}: {e}")
+        return []
+
+def get_user_active_investments(chat_id: int) -> List[Dict[str, Any]]:
+    """
+    Get active investments for a specific user.
+    
+    Args:
+        chat_id: Telegram chat ID
+    
+    Returns:
+        List of active investment dictionaries
+    """
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT tier_level, investment_amount, expected_return, duration_hours, invested_at
+                FROM investments
+                WHERE chat_id = ? AND status = 'active'
+                ORDER BY invested_at DESC
+            """, (chat_id,))
+            
+            columns = [description[0] for description in cursor.description]
+            investments = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            
+            return investments
+            
+    except Exception as e:
+        logger.error(f"Error retrieving active investments for user {chat_id}: {e}")
+        return []
+
+def complete_investment(chat_id: int, tier_level: int) -> bool:
+    """
+    Mark an investment as completed.
+    
+    Args:
+        chat_id: Telegram chat ID
+        tier_level: Tier level (1-10)
+    
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                UPDATE investments 
+                SET status = 'completed', completed_at = CURRENT_TIMESTAMP
+                WHERE chat_id = ? AND tier_level = ? AND status = 'active'
+            """, (chat_id, tier_level))
+            
+            conn.commit()
+            rows_affected = cursor.rowcount
+            logger.info(f"Completed investment for user {chat_id} in tier {tier_level}. Rows affected: {rows_affected}")
+            return rows_affected > 0
+            
+    except Exception as e:
+        logger.error(f"Error completing investment for user {chat_id}: {e}")
+        return False
+
 def get_users() -> List[Dict[str, Any]]:
     """
     Get all users from the database.
@@ -121,7 +298,7 @@ def get_users() -> List[Dict[str, Any]]:
         List of user dictionaries
     """
     try:
-        with get_connection() as conn:
+        with get_db_connection() as conn:
             cursor = conn.cursor()
             
             cursor.execute("""
@@ -148,7 +325,7 @@ def get_user_stats() -> Dict[str, Any]:
         Dictionary with user statistics
     """
     try:
-        with get_connection() as conn:
+        with get_db_connection() as conn:
             cursor = conn.cursor()
             
             # Total users
@@ -166,15 +343,25 @@ def get_user_stats() -> Dict[str, Any]:
             cursor.execute("SELECT COUNT(*) FROM command_logs")
             total_commands = cursor.fetchone()[0]
             
+            # Total investments
+            cursor.execute("SELECT COUNT(*) FROM investments")
+            total_investments = cursor.fetchone()[0]
+            
+            # Active investments
+            cursor.execute("SELECT COUNT(*) FROM investments WHERE status = 'active'")
+            active_investments = cursor.fetchone()[0]
+            
             return {
                 'total_users': total_users,
                 'active_users': active_users,
-                'total_commands': total_commands
+                'total_commands': total_commands,
+                'total_investments': total_investments,
+                'active_investments': active_investments
             }
             
     except Exception as e:
         logger.error(f"Error getting user stats: {e}")
-        return {'total_users': 0, 'active_users': 0, 'total_commands': 0}
+        return {'total_users': 0, 'active_users': 0, 'total_commands': 0, 'total_investments': 0, 'active_investments': 0}
 
 def get_user_command_history(chat_id: int, limit: int = 10) -> List[Dict[str, Any]]:
     """
@@ -188,7 +375,7 @@ def get_user_command_history(chat_id: int, limit: int = 10) -> List[Dict[str, An
         List of command dictionaries
     """
     try:
-        with get_connection() as conn:
+        with get_db_connection() as conn:
             cursor = conn.cursor()
             
             cursor.execute("""

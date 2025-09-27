@@ -1,15 +1,83 @@
-# Telegram Bot
+# CapitalX Beginner-Friendly Telegram Bot
 
-A production-ready Telegram bot built with Python and the python-telegram-bot library. This bot features interactive navigation, SQLite database integration, user management, and comprehensive error handling.
+## Overview
+This is a beginner-friendly Telegram bot for the CapitalX investment platform. The bot provides simplified guidance for new users to understand how to invest with CapitalX, with clear options for both bonus and direct deposit paths.
+
+## Features
+- 🎯 Simplified menu structure for easy navigation
+- 💰 Clear differentiation between bonus and direct investment paths
+- 📈 Comprehensive investment plan information with tier progression
+- 🔁 Proper reinvestment guidance with "one investment per tier" rules
+- 📊 Investment tracking capabilities
+- ❓ Beginner-appropriate language and explanations
+
+## Investment Options
+CapitalX offers a comprehensive 3-stage tier investment system:
+1. **Foundation Tier (R70 - R1,120)** - Perfect for beginners
+2. **Growth Tier (R2,240 - R17,920)** - For intermediate investors
+3. **Premium Tier (R35,840 - R50,000)** - For advanced investors
+
+## Getting Started
+
+### Prerequisites
+- Python 3.8 or higher
+- Telegram account
+- CapitalX platform account (optional for initial exploration)
+
+### Installation
+1. Clone this repository
+2. Install required packages:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Create a `.env` file with your Telegram bot token:
+   ```env
+   TELEGRAM_BOT_TOKEN=your_actual_bot_token_here
+   ```
+
+### Running the Bot
+Simply run:
+```bash
+python main.py
+```
+
+Or use the provided batch file:
+```bash
+run_beginner.bat
+```
+
+## Bot Usage
+The bot provides a simplified menu structure with clear options:
+- 👋 Welcome & Basics - Learn about CapitalX
+- 💰 Start with Bonus (R50 Free) - Use free money to try investing
+- 💳 Start with Your Money - Invest your own funds
+- 📈 Investment Options - See all investment plans
+- 🔄 Reinvest Profits - Learn about reinvestment rules
+- 📊 My Investments - Track your current investments
+- ❓ Need Help? - Get assistance
+- 🌐 Website Links - Access important URLs
+
+## Configuration
+The bot is configured to use only beginner-friendly features and automatically manages processes to prevent conflicts.
+
+## Support
+For issues with the bot, contact the development team. For CapitalX platform issues, use the links provided in the bot to access the official support channels.
+
+# CapitalX Telegram Support Bot
+
+A production-ready Telegram bot built with Python that provides intelligent support for the CapitalX investment platform. The bot features interactive navigation, SQLite database integration, web scraping for real-time knowledge base updates, and comprehensive user support.
 
 ## Features
 
 - 🤖 Interactive button navigation
+- 🌐 **Real-time knowledge base from CapitalX website**
+- 🔍 **Intelligent search functionality**
 - 📊 User data storage and analytics
 - 🔒 Secure token management
 - 📝 Command logging
 - 🛡️ Comprehensive error handling
 - 🏗️ Modular, extensible architecture
+- 🔄 **Automatic knowledge base updates**
 
 ## Project Structure
 
@@ -18,6 +86,9 @@ telegrambot/
 ├── main.py              # Application entry point
 ├── handlers.py          # Command and button handlers
 ├── database.py          # SQLite database operations
+├── kb.py                # Knowledge base search functions
+├── kb_scraper.py        # Web scraper for CapitalX content
+├── test_kb.py           # Knowledge base testing script
 ├── requirements.txt     # Python dependencies
 ├── README.md           # This file
 └── .env                # Environment variables (create this)
@@ -85,16 +156,26 @@ telegrambot/
 ### Commands
 
 - `/start` - Start the bot and show main menu
-- `/help` - Display help information
+- `/help` - Display help information and available commands
+- `/search [query]` - **Search the CapitalX knowledge base**
+- `/refresh_kb` - **Update knowledge base with latest content from website**
 
 ### Navigation
 
 The bot uses inline buttons for navigation:
-- **About** - Information about the bot
-- **Contact** - Contact information
-- **Features** - Bot capabilities
-- **My Stats** - Your usage statistics
-- **Help** - Help and support
+- **About** - Information about CapitalX platform
+- **How It Works** - Step-by-step guide to using CapitalX
+- **Guides** - Registration and account management guides
+- **Tiers** - Information about bonuses and tier benefits
+- **FAQs** - Frequently asked questions
+- **Contact** - Contact and support information
+
+### Smart Features
+
+- **Intelligent Search**: Ask questions in natural language
+- **Auto-complete**: The bot understands common terms like "bonus", "deposit", "withdraw"
+- **Real-time Updates**: Knowledge base automatically syncs with CapitalX website
+- **Fallback Responses**: Always provides helpful information even for unknown queries
 
 ## Database
 
@@ -102,8 +183,28 @@ The bot uses SQLite to store:
 - User information (chat_id, username, names, timestamps)
 - Command logs (commands executed, timestamps)
 - Usage statistics
+- **Enhanced knowledge base with categories, keywords, and content from CapitalX**
 
-Database file: `telegram_bot.db` (created automatically)
+Database files:
+- `telegram_bot.db` (main database, created automatically)
+- Enhanced KB tables for intelligent search and categorization
+
+## Knowledge Base
+
+The bot automatically scrapes and maintains an up-to-date knowledge base from https://capitalx-rtn.onrender.com/
+
+### Categories Covered:
+- Platform Overview (About, How It Works, Features)
+- Account Management (Registration, Login)
+- Financial Operations (Deposits, Withdrawals)
+- Bonuses & Referrals
+- Trading & AI Strategies
+- Contact & Support
+
+### Testing the Knowledge Base:
+```bash
+python test_kb.py
+```
 
 ## Configuration
 

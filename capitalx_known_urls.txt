@@ -1,0 +1,9 @@
+# Known CapitalX Website URLs
+# These are URLs we know exist based on codebase analysis
+
+https://capitalx-rtn.onrender.com
+https://capitalx-rtn.onrender.com/
+https://capitalx-rtn.onrender.com/\n
+https://capitalx-rtn.onrender.com/\n📧
+https://capitalx-rtn.onrender.com/register/
+https://capitalx-rtn.onrender.com/register/\n2.
