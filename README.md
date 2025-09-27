@@ -35,6 +35,11 @@ CapitalX offers a comprehensive 3-stage tier investment system:
    TELEGRAM_BOT_TOKEN=your_actual_bot_token_here
    ```
 
+### Security Notice
+**Important**: Never commit your real Telegram bot token to version control. 
+The [.env](file:///c%3A/Users/money/HustleProjects/BevanTheDev/Telegrambot/.env) file is included in [.gitignore](file:///c%3A/Users/money/HustleProjects/BevanTheDev/Telegrambot/.gitignore) to prevent accidental commits.
+See [SECURITY_NOTICE.md](file:///c%3A/Users/money/HustleProjects/BevanTheDev/Telegrambot/SECURITY_NOTICE.md) for more information on secret management.
+
 ### Running the Bot
 Simply run:
 ```bash
