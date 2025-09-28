@@ -1,1 +1,1 @@
-web: python health_check.py
+web: python main.py
