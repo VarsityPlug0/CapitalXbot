@@ -10,6 +10,7 @@ import time
 from flask import Flask, jsonify
 from dotenv import load_dotenv
 import logging
+import sys
 
 # Load environment variables
 load_dotenv()
@@ -77,10 +78,18 @@ def run_bot():
     """Run the Telegram bot in a separate thread."""
     try:
         # Import here to avoid issues with circular imports
-        from main import main as bot_main
+        if 'RENDER' in os.environ:
+            # If we're on Render, we need to run the main function differently to avoid circular imports
+            # We'll execute the main.py script directly
+            import subprocess
+            import sys
+            # Run main.py as a separate process
+            subprocess.Popen([sys.executable, "main.py"])
+        else:
+            from main import main as bot_main
+            bot_main()
         update_bot_status(True)
         logger.info("Starting Telegram bot...")
-        bot_main()
     except Exception as e:
         logger.error(f"Error running bot: {e}")
         update_bot_status(False, e)
