@@ -37,7 +37,7 @@ services:
     name: CapitalX-Telegram-Bot
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python health_check.py
+    startCommand: python main.py
     envVars:
       - key: TELEGRAM_BOT_TOKEN
         sync: false
@@ -91,7 +91,7 @@ flask==2.3.3
 3. Connect your GitHub account and select the repository
 4. Configure the service with:
    - Build Command: `pip install -r requirements.txt`
-   - Start Command: `python health_check.py`
+   - Start Command: `python main.py`
 5. Add `TELEGRAM_BOT_TOKEN` as an environment variable
 6. Deploy the service
 
@@ -100,6 +100,8 @@ The bot is configured to run as a web service with health check endpoints. This 
 - Prevents 409 conflict errors by ensuring only one bot instance runs
 - Binds to Render's required PORT environment variable
 - Provides monitoring endpoints for service health
+
+The [main.py](file:///c:\Users\money\HustleProjects\BevanTheDev\Telegrambot\main.py) script automatically detects when it's running on Render and uses the health check approach, so you can use `python main.py` as the start command.
 
 ## Important Considerations
 
@@ -133,12 +135,12 @@ The bot is configured to run as a web service with health check endpoints. This 
 ## Troubleshooting
 
 ### Common Issues
-1. **409 Conflict Error**: Multiple bot instances trying to connect with same token. Solution: Use health_check.py which ensures single instance.
+1. **409 Conflict Error**: Multiple bot instances trying to connect with same token. Solution: The main.py script detects Render environment and uses health_check approach which ensures single instance.
 2. **Bot not responding**: Verify `TELEGRAM_BOT_TOKEN` is correctly set
 3. **Import errors**: Check that all dependencies install correctly
 4. **Database errors**: Free tier data loss between deployments
 5. **Service sleeping**: Upgrade from free tier for 24/7 availability
-6. **No Open Ports Detected**: Use health_check.py which binds to PORT environment variable
+6. **No Open Ports Detected**: The main.py script detects Render environment and uses health_check approach which binds to PORT environment variable
 
 ### Logs and Debugging
 - Access logs through Render dashboard
@@ -164,9 +166,9 @@ The bot is configured to run as a web service with health check endpoints. This 
 ## Support Resources
 
 ### Documentation
-- [RENDER_DEPLOYMENT_GUIDE.md](file:///c%3A/Users/money/HustleProjects/BevanTheDev/Telegrambot/RENDER_DEPLOYMENT_GUIDE.md) - Detailed Render deployment guide
-- [README.md](file:///c%3A/Users/money/HustleProjects/BevanTheDev/Telegrambot/README.md) - Project overview and local usage
-- [SECURITY_NOTICE.md](file:///c%3A/Users/money/HustleProjects/BevanTheDev/Telegrambot/SECURITY_NOTICE.md) - Security best practices
+- [RENDER_DEPLOYMENT_GUIDE.md](file:///c:\Users\money\HustleProjects\BevanTheDev\Telegrambot\RENDER_DEPLOYMENT_GUIDE.md) - Detailed Render deployment guide
+- [README.md](file:///c:\Users\money\HustleProjects\BevanTheDev\Telegrambot\README.md) - Project overview and local usage
+- [SECURITY_NOTICE.md](file:///c:\Users\money\HustleProjects\BevanTheDev\Telegrambot\SECURITY_NOTICE.md) - Security best practices
 
 ### External Resources
 - [Render Documentation](https://render.com/docs)
@@ -174,4 +176,4 @@ The bot is configured to run as a web service with health check endpoints. This 
 - [@BotFather](https://t.me/BotFather) - Telegram bot token management
 
 ## Conclusion
-The CapitalX Telegram bot is now fully prepared for deployment on Render with a web service approach that prevents 409 conflict errors and binds to the required PORT environment variable. Comprehensive documentation is provided for easy deployment and troubleshooting.
+The CapitalX Telegram bot is now fully prepared for deployment on Render with a web service approach that prevents 409 conflict errors and binds to the required PORT environment variable. The main.py script automatically detects when it's running on Render and uses the health check approach, ensuring proper deployment regardless of the start command configuration. Comprehensive documentation is provided for easy deployment and troubleshooting.

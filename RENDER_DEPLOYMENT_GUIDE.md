@@ -27,7 +27,9 @@ Fill in the following information:
 - **Root Directory**: Leave empty (or specify if your code is in a subdirectory)
 - **Environment**: Python 3
 - **Build Command**: `pip install -r requirements.txt`
-- **Start Command**: `python health_check.py`
+- **Start Command**: `python main.py`
+
+> **Note**: The [main.py](file:///c:\Users\money\HustleProjects\BevanTheDev\Telegrambot\main.py) script automatically detects when it's running on Render and uses the health check approach, so you can use `python main.py` as the start command.
 
 ### 4. Configure Environment Variables
 In the "Advanced" section, add the following environment variable:
@@ -53,7 +55,7 @@ Unlike traditional Telegram bots that run as worker processes, this bot uses a h
 Make sure to set the `TELEGRAM_BOT_TOKEN` environment variable in the Render dashboard. Never hardcode your token in the source code.
 
 ### Database
-The bot uses a SQLite database ([telegram_bot.db](file:///c%3A/Users/money/HustleProjects/BevanTheDev/Telegrambot/telegram_bot.db)) which is stored locally. On Render, this data will not persist across deployments. For production use, consider:
+The bot uses a SQLite database ([telegram_bot.db](file:///c:\Users\money\HustleProjects\BevanTheDev\Telegrambot\telegram_bot.db)) which is stored locally. On Render, this data will not persist across deployments. For production use, consider:
 1. Using Render's PostgreSQL database service
 2. Modifying the database.py file to use PostgreSQL instead of SQLite
 
@@ -68,7 +70,7 @@ The free tier of Render will put your service to sleep after 15 minutes of inact
 1. **Bot not responding**: Check that the `TELEGRAM_BOT_TOKEN` is correctly set
 2. **Import errors**: Ensure all dependencies in requirements.txt are correctly installed
 3. **Database errors**: If using free tier, data may be lost between deployments
-4. **409 Conflict Error**: This indicates multiple bot instances are trying to connect with the same token. Our health_check.py solution ensures only one instance runs.
+4. **409 Conflict Error**: This indicates multiple bot instances are trying to connect with the same token. Our solution ensures only one instance runs by detecting the Render environment and using the health check approach.
 
 ### Health Check Endpoints
 The web service provides the following endpoints for monitoring:
@@ -79,13 +81,15 @@ The web service provides the following endpoints for monitoring:
 ### Render Configuration File
 This repository includes a `render.yaml` file that explicitly defines the service configuration. This file takes precedence over the Procfile when deploying to Render. The configuration specifies:
 - Service type: web
-- Start command: python health_check.py
+- Start command: python main.py
 - Environment: Python
+
+The [main.py](file:///c:\Users\money\HustleProjects\BevanTheDev\Telegrambot\main.py) script automatically detects when it's running on Render and uses the health check approach, so you can use `python main.py` as the start command.
 
 If you're experiencing issues with Render not using the correct start command, ensure that:
 1. The `render.yaml` file is present in the root directory
 2. The service is configured as a "Web Service" rather than a "Worker"
-3. The start command in the Render dashboard matches `python health_check.py`
+3. The start command in the Render dashboard matches `python main.py`
 
 ### Logs
 You can view your application logs in the Render dashboard:
