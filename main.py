@@ -16,8 +16,8 @@ health_check_import = os.environ.get('HEALTH_CHECK_IMPORT', 'false').lower() == 
 if render_env and not health_check_import:
     # If running on Render and not imported by health_check, import and run the health check version
     try:
-        from health_check import app, start_bot_thread
-        import threading
+        import asyncio
+        from health_check import main as health_check_main
         
         # Set up logging
         logging.basicConfig(
@@ -27,13 +27,8 @@ if render_env and not health_check_import:
         logger = logging.getLogger(__name__)
         
         if __name__ == '__main__':
-            # Start the bot in a separate thread
-            bot_thread = start_bot_thread()
-            
-            # Start the web server
-            port = int(os.environ.get('PORT', 8000))
-            logger.info(f"Starting web service on port {port}")
-            app.run(host='0.0.0.0', port=port, threaded=True)
+            # Run both the bot and web server in the same event loop
+            asyncio.run(health_check_main())
     except ImportError as e:
         print(f"Error importing health_check module: {e}")
         sys.exit(1)
