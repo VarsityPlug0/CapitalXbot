@@ -7,6 +7,7 @@ These handlers provide simplified navigation and clear explanations for new user
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from telegram.constants import ChatType
+from telegram.error import BadRequest
 import logging
 
 from database import add_user, log_command, record_investment, get_user_investments
@@ -280,17 +281,47 @@ Here are the important links you need:
 
 Always make sure you're using official links to protect your account."""
     
+    # Handle main menu navigation
+    elif query.data == "main_menu" or query.data == "back_to_start":
+        # Show the main menu again
+        keyboard = [
+            [InlineKeyboardButton("👋 Welcome & Basics", callback_data="welcome")],
+            [InlineKeyboardButton("💰 Start with Bonus (R50 Free)", callback_data="bonus_path")],
+            [InlineKeyboardButton("💳 Start with Your Money", callback_data="direct_path")],
+            [InlineKeyboardButton("📈 Investment Options", callback_data="investment_options")],
+            [InlineKeyboardButton("🔄 Reinvest Profits", callback_data="reinvest")],
+            [InlineKeyboardButton("📊 My Investments", callback_data="my_investments")],
+            [InlineKeyboardButton("❓ Need Help?", callback_data="help")],
+            [InlineKeyboardButton("🌐 Website Links", callback_data="links")]
+        ]
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text("📋 *Main Menu*", reply_markup=reply_markup, parse_mode='Markdown')
+        return
+    
     else:
         response_text = "I'm not sure what you're looking for. Please use the menu buttons to navigate."
     
-    # Add navigation options at the end
-    keyboard = [
-        [InlineKeyboardButton("📋 Main Menu", callback_data="main_menu")],
-        [InlineKeyboardButton("👋 Back to Start", callback_data="back_to_start")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    await query.edit_message_text(response_text, reply_markup=reply_markup, parse_mode='Markdown')
+    # Add navigation options at the end (except for main menu requests)
+    if query.data != "main_menu" and query.data != "back_to_start":
+        keyboard = [
+            [InlineKeyboardButton("📋 Main Menu", callback_data="main_menu")],
+            [InlineKeyboardButton("👋 Back to Start", callback_data="back_to_start")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        try:
+            await query.edit_message_text(response_text, reply_markup=reply_markup, parse_mode='Markdown')
+        except BadRequest as e:
+            # Handle "Message is not modified" error gracefully
+            if "Message is not modified" in str(e):
+                logger.info(f"Message not modified for user {user.id if user else 'unknown'}, callback {query.data}")
+                # Message is already the same, so we don't need to do anything
+                pass
+            else:
+                # Re-raise the exception if it's a different error
+                raise
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle regular text messages with beginner-friendly responses."""
@@ -348,28 +379,3 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     
     if update.message:
         await update.message.reply_text(response_text)
-
-# Add new handler for main menu navigation
-async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle main menu navigation."""
-    query = update.callback_query
-    if not query:
-        return
-        
-    await query.answer()
-    
-    # Show the main menu again
-    keyboard = [
-        [InlineKeyboardButton("👋 Welcome & Basics", callback_data="welcome")],
-        [InlineKeyboardButton("💰 Start with Bonus (R50 Free)", callback_data="bonus_path")],
-        [InlineKeyboardButton("💳 Start with Your Money", callback_data="direct_path")],
-        [InlineKeyboardButton("📈 Investment Options", callback_data="investment_options")],
-        [InlineKeyboardButton("🔄 Reinvest Profits", callback_data="reinvest")],
-        [InlineKeyboardButton("📊 My Investments", callback_data="my_investments")],
-        [InlineKeyboardButton("❓ Need Help?", callback_data="help")],
-        [InlineKeyboardButton("🌐 Website Links", callback_data="links")]
-    ]
-    
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    await query.edit_message_text("📋 *Main Menu*", reply_markup=reply_markup, parse_mode='Markdown')
