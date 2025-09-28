@@ -169,4 +169,6 @@ if __name__ == '__main__':
     # Start the web server
     port = int(os.environ.get('PORT', 8000))
     logger.info(f"Starting web service on port {port}")
-    app.run(host='0.0.0.0', port=port, threaded=True)
+    
+    # Ensure we bind to all interfaces for Render
+    app.run(host='0.0.0.0', port=port, threaded=True, debug=False)
