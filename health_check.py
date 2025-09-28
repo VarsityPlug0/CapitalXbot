@@ -69,8 +69,8 @@ async def home(request):
         "bot_running": bot_status["running"]
     })
 
-async def run_bot():
-    """Run the Telegram bot as a coroutine."""
+def run_bot():
+    """Run the Telegram bot in the same event loop as the web server."""
     try:
         # Import here to avoid issues with circular imports
         if 'RENDER' in os.environ:
@@ -110,12 +110,15 @@ async def main():
     # Start the web server
     runner, site = await start_web_server()
     
-    # Start the bot
-    bot_task = asyncio.create_task(run_bot())
+    # Start the bot in a separate task
+    loop = asyncio.get_event_loop()
+    loop.call_soon(run_bot)
     
     # Keep the application running
     try:
-        await bot_task
+        # Wait indefinitely
+        while True:
+            await asyncio.sleep(3600)  # Sleep for an hour, then check again
     except KeyboardInterrupt:
         pass
     finally:
