@@ -16,7 +16,7 @@ health_check_import = os.environ.get('HEALTH_CHECK_IMPORT', 'false').lower() == 
 if render_env and not health_check_import:
     # If running on Render and not imported by health_check, import and run the health check version
     try:
-        from health_check import app, start_bot_thread
+        from health_check import app, start_bot_async
         import threading
         
         # Set up logging
@@ -27,8 +27,8 @@ if render_env and not health_check_import:
         logger = logging.getLogger(__name__)
         
         if __name__ == '__main__':
-            # Start the bot in a separate thread
-            bot_thread = start_bot_thread()
+            # Start the bot
+            executor, future = start_bot_async()
             
             # Start the web server
             port = int(os.environ.get('PORT', 8000))
