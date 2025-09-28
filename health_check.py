@@ -6,11 +6,12 @@ This provides a web interface for Render to bind to a port while running the bot
 
 import os
 import time
-from aiohttp import web
+from flask import Flask, jsonify
 from dotenv import load_dotenv
 import logging
 import sys
-import asyncio
+import subprocess
+import threading
 
 # Load environment variables
 load_dotenv()
@@ -18,6 +19,8 @@ load_dotenv()
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+app = Flask(__name__)
 
 # Global variable to track bot status
 bot_status = {
@@ -37,9 +40,10 @@ def update_bot_status(status, error=None):
         if len(bot_status["errors"]) > 10:
             bot_status["errors"] = bot_status["errors"][-10:]
 
-async def health_check(request):
+@app.route('/health')
+def health_check():
     """Simple health check endpoint."""
-    return web.json_response({
+    return jsonify({
         "status": "healthy",
         "service": "CapitalX-Telegram-Bot",
         "bot_running": bot_status["running"],
@@ -47,18 +51,20 @@ async def health_check(request):
         "error_count": len(bot_status["errors"])
     })
 
-async def status_check(request):
+@app.route('/status')
+def status_check():
     """Detailed status endpoint."""
-    return web.json_response({
+    return jsonify({
         "status": "running" if bot_status["running"] else "stopped",
         "service": "CapitalX-Telegram-Bot",
         "environment": os.getenv("ENVIRONMENT", "production"),
         "bot_status": bot_status
     })
 
-async def home(request):
+@app.route('/')
+def home():
     """Home endpoint with service information."""
-    return web.json_response({
+    return jsonify({
         "message": "CapitalX Telegram Bot Web Service",
         "description": "This service runs the CapitalX Telegram bot and provides health check endpoints",
         "endpoints": {
@@ -69,60 +75,29 @@ async def home(request):
         "bot_running": bot_status["running"]
     })
 
-def run_bot():
-    """Run the Telegram bot in the same event loop as the web server."""
+def start_bot_process():
+    """Start the Telegram bot in a separate process."""
     try:
-        # Import here to avoid issues with circular imports
-        if 'RENDER' in os.environ:
-            # If we're on Render, we need to import the main function differently
-            # Set environment variable to indicate we're importing from health_check
-            os.environ['HEALTH_CHECK_IMPORT'] = 'true'
-            # Import the main function directly without triggering the Render check
-            from main import main as bot_main
-            # Run the bot in the same event loop
-            bot_main()
-        else:
-            from main import main as bot_main
-            bot_main()
+        # Start the bot as a separate process
+        bot_process = subprocess.Popen([sys.executable, "-c", """
+import os
+os.environ['HEALTH_CHECK_IMPORT'] = 'true'
+from main import main
+main()
+"""])
         update_bot_status(True)
-        logger.info("Starting Telegram bot...")
+        logger.info("Starting Telegram bot in separate process...")
+        return bot_process
     except Exception as e:
-        logger.error(f"Error running bot: {e}")
+        logger.error(f"Error starting bot: {e}")
         update_bot_status(False, e)
-
-async def start_web_server():
-    """Start the web server."""
-    app = web.Application()
-    app.router.add_get('/', home)
-    app.router.add_get('/health', health_check)
-    app.router.add_get('/status', status_check)
-    
-    port = int(os.environ.get('PORT', 8000))
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', port)
-    await site.start()
-    logger.info(f"Starting web service on port {port}")
-    return runner, site
-
-async def main():
-    """Main async function to run both the bot and web server."""
-    # Start the web server
-    runner, site = await start_web_server()
-    
-    # Start the bot in a separate task
-    loop = asyncio.get_event_loop()
-    loop.call_soon(run_bot)
-    
-    # Keep the application running
-    try:
-        # Wait indefinitely
-        while True:
-            await asyncio.sleep(3600)  # Sleep for an hour, then check again
-    except KeyboardInterrupt:
-        pass
-    finally:
-        await runner.cleanup()
+        return None
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    # Start the bot process
+    bot_process = start_bot_process()
+    
+    # Start the web server
+    port = int(os.environ.get('PORT', 8000))
+    logger.info(f"Starting web service on port {port}")
+    app.run(host='0.0.0.0', port=port, threaded=True)
