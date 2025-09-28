@@ -27,7 +27,8 @@ app = Flask(__name__)
 bot_status = {
     "running": False,
     "last_update": None,
-    "errors": []
+    "errors": [],
+    "restart_count": 0
 }
 
 # Global variable to store bot process
@@ -43,6 +44,7 @@ def update_bot_status(status, error=None):
         # Keep only the last 10 errors
         if len(bot_status["errors"]) > 10:
             bot_status["errors"] = bot_status["errors"][-10:]
+        logger.error(f"Bot error: {error}")
 
 @app.route('/health')
 def health_check():
@@ -52,13 +54,19 @@ def health_check():
     if bot_process and bot_process.poll() is not None:
         # Process has terminated
         update_bot_status(False)
+        # Automatically restart the bot
+        restart_bot_process()
+    
+    # Update last check time
+    bot_status["last_update"] = time.time()
     
     return jsonify({
         "status": "healthy",
         "service": "CapitalX-Telegram-Bot",
         "bot_running": bot_status["running"],
         "last_update": bot_status["last_update"],
-        "error_count": len(bot_status["errors"])
+        "error_count": len(bot_status["errors"]),
+        "restart_count": bot_status["restart_count"]
     })
 
 @app.route('/status')
@@ -69,6 +77,8 @@ def status_check():
     if bot_process and bot_process.poll() is not None:
         # Process has terminated
         update_bot_status(False)
+        # Automatically restart the bot
+        restart_bot_process()
         
     return jsonify({
         "status": "running" if bot_status["running"] else "stopped",
@@ -97,7 +107,8 @@ def restart_bot():
     
     return jsonify({
         "status": "restarted",
-        "bot_running": bot_status["running"]
+        "bot_running": bot_status["running"],
+        "restart_count": bot_status["restart_count"]
     })
 
 @app.route('/')
@@ -108,6 +119,8 @@ def home():
     if bot_process and bot_process.poll() is not None:
         # Process has terminated
         update_bot_status(False)
+        # Automatically restart the bot
+        restart_bot_process()
         
     return jsonify({
         "message": "CapitalX Telegram Bot Web Service",
@@ -118,7 +131,8 @@ def home():
             "restart": "/restart",
             "info": "/"
         },
-        "bot_running": bot_status["running"]
+        "bot_running": bot_status["running"],
+        "restart_count": bot_status["restart_count"]
     })
 
 def start_bot_process():
@@ -141,6 +155,32 @@ def start_bot_process():
         update_bot_status(False, e)
         return None
 
+def restart_bot_process():
+    """Automatically restart the bot process if it stops."""
+    global bot_process, bot_status
+    
+    logger.info("Attempting to restart bot process...")
+    bot_status["restart_count"] += 1
+    
+    # Terminate existing process if running
+    if bot_process:
+        try:
+            bot_process.terminate()
+            bot_process.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            bot_process.kill()
+        except Exception as e:
+            logger.error(f"Error terminating bot process during restart: {e}")
+    
+    # Start new process after a brief delay
+    time.sleep(2)
+    bot_process = start_bot_process()
+    
+    if bot_process:
+        logger.info(f"Bot restarted successfully. Restart count: {bot_status['restart_count']}")
+    else:
+        logger.error("Failed to restart bot process")
+
 def signal_handler(sig, frame):
     """Handle shutdown signals."""
     global bot_process
@@ -157,6 +197,31 @@ def signal_handler(sig, frame):
     
     sys.exit(0)
 
+# Start a background thread to monitor the bot process
+def monitor_bot():
+    """Monitor the bot process and restart if needed."""
+    global bot_process, bot_status
+    while True:
+        try:
+            # Check every 30 seconds if the bot is still running
+            time.sleep(30)
+            
+            # If we're not running on Render, skip monitoring
+            if not os.environ.get('RENDER'):
+                time.sleep(60)  # Check less frequently when not on Render
+                continue
+            
+            # If the process has terminated, restart it
+            if bot_process and bot_process.poll() is not None:
+                logger.warning("Bot process has stopped, attempting to restart...")
+                restart_bot_process()
+                
+            # Update the last check time
+            bot_status["last_update"] = time.time()
+        except Exception as e:
+            logger.error(f"Error in bot monitoring thread: {e}")
+            time.sleep(30)  # Continue monitoring even if there's an error
+
 if __name__ == '__main__':
     # Register signal handlers for graceful shutdown
     signal.signal(signal.SIGINT, signal_handler)
@@ -164,6 +229,10 @@ if __name__ == '__main__':
     
     # Start the bot process
     bot_process = start_bot_process()
+    
+    # Start monitoring thread
+    monitor_thread = threading.Thread(target=monitor_bot, daemon=True)
+    monitor_thread.start()
     
     # Start the web server
     port = int(os.environ.get('PORT', 8000))

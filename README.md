@@ -10,6 +10,7 @@ This is a beginner-friendly Telegram bot for the CapitalX investment platform. T
 - 🔁 Proper reinvestment guidance with "one investment per tier" rules
 - 📊 Investment tracking capabilities
 - ❓ Beginner-appropriate language and explanations
+- 🔄 Automatic restart capabilities to keep bot running
 
 ## Investment Options
 CapitalX offers a comprehensive 3-stage tier investment system:
@@ -51,6 +52,16 @@ Or use the provided batch file:
 run_beginner.bat
 ```
 
+For automatic restart capabilities, use:
+```bash
+python monitor_bot.py
+```
+
+Or the Windows batch file:
+```bash
+run_monitored_bot.bat
+```
+
 ## Deployment
 
 ### Deploying to Render
@@ -81,15 +92,17 @@ For issues with the bot, contact the development team. For CapitalX platform iss
 
 ```
 telegrambot/
-├── main.py              # Application entry point
-├── handlers.py          # Command and button handlers
-├── database.py          # SQLite database operations
-├── kb.py                # Knowledge base search functions
-├── kb_scraper.py        # Web scraper for CapitalX content
-├── test_kb.py           # Knowledge base testing script
-├── requirements.txt     # Python dependencies
-├── README.md           # This file
-└── .env                # Environment variables (create this)
+├── main.py                 # Application entry point
+├── handlers.py             # Command and button handlers
+├── database.py             # SQLite database operations
+├── kb.py                   # Knowledge base search functions
+├── kb_scraper.py           # Web scraper for CapitalX content
+├── monitor_bot.py          # Bot monitoring and auto-restart script
+├── health_check.py         # Web service for Render deployment
+├── test_kb.py              # Knowledge base testing script
+├── requirements.txt        # Python dependencies
+├── README.md               # This file
+└── .env                    # Environment variables (create this)
 ```
 
 ## Installation
@@ -149,13 +162,29 @@ telegrambot/
    - Send `/start` command
    - Use the inline buttons to navigate
 
+## Running with Automatic Restart (Recommended)
+
+To ensure the bot stays running even if it encounters errors:
+
+1. **Start the monitored bot**
+   ```bash
+   python monitor_bot.py
+   ```
+
+2. **On Windows, use the batch file**
+   ```bash
+   run_monitored_bot.bat
+   ```
+
+The monitor will automatically restart the bot if it crashes or stops unexpectedly.
+
 ## Usage
 
 ### Commands
 
 - `/start` - Start the bot and show main menu
 - `/help` - Display help information and available commands
-- `/search [query]` - **Search the CapitalX knowledge base**
+- `/search [query] - **Search the CapitalX knowledge base**
 - `/refresh_kb` - **Update knowledge base with latest content from website**
 
 ### Navigation
@@ -174,6 +203,7 @@ The bot uses inline buttons for navigation:
 - **Auto-complete**: The bot understands common terms like "bonus", "deposit", "withdraw"
 - **Real-time Updates**: Knowledge base automatically syncs with CapitalX website
 - **Fallback Responses**: Always provides helpful information even for unknown queries
+- **Automatic Restart**: Bot automatically restarts if it crashes
 
 ## Database
 
@@ -303,3 +333,4 @@ For support and questions:
 - Command logging
 - Error handling
 - Documentation
+- Automatic restart capabilities
