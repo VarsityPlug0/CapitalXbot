@@ -29,16 +29,30 @@ Explicit worker process file:
 worker: python main.py
 ```
 
-### 5. health_check.py
+### 5. render.yaml
+Explicit Render service configuration file:
+```yaml
+services:
+  - type: web
+    name: CapitalX-Telegram-Bot
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python health_check.py
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+```
+
+### 6. health_check.py
 Flask application that runs the bot in a background thread and provides health check endpoints:
 - `/health` - Returns JSON health status
 - `/status` - Returns detailed status information
 - `/` - Returns service information
 
-### 6. RENDER_DEPLOYMENT_GUIDE.md
+### 7. RENDER_DEPLOYMENT_GUIDE.md
 Comprehensive guide for deploying the bot on Render with detailed instructions.
 
-### 7. requirements.txt (updated)
+### 8. requirements.txt (updated)
 Added Flask dependency for health check endpoint:
 ```
 python-telegram-bot==21.6

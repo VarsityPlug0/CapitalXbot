@@ -76,6 +76,17 @@ The web service provides the following endpoints for monitoring:
 - `/status` - Detailed status information
 - `/` - Service information
 
+### Render Configuration File
+This repository includes a `render.yaml` file that explicitly defines the service configuration. This file takes precedence over the Procfile when deploying to Render. The configuration specifies:
+- Service type: web
+- Start command: python health_check.py
+- Environment: Python
+
+If you're experiencing issues with Render not using the correct start command, ensure that:
+1. The `render.yaml` file is present in the root directory
+2. The service is configured as a "Web Service" rather than a "Worker"
+3. The start command in the Render dashboard matches `python health_check.py`
+
 ### Logs
 You can view your application logs in the Render dashboard:
 1. Go to your service
