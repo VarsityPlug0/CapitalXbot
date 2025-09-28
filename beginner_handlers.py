@@ -1,564 +1,375 @@
+#!/usr/bin/env python3
 """
-Beginner-friendly handlers module for CapitalX Support Telegram Bot
-Simplified version with clearer guidance for new users.
+Beginner-friendly handlers for the CapitalX Telegram bot.
+These handlers provide simplified navigation and clear explanations for new users.
 """
 
-import logging
-from typing import Optional
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, User
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from database import add_user, log_command, record_investment, get_user_active_investments
-from kb import search_kb
-from enhanced_keyword_search import search_kb_enhanced_v2
+from telegram.constants import ChatType
+import logging
+
+from database import add_user, log_command, record_investment, get_user_investments
 
 logger = logging.getLogger(__name__)
 
-# Simplified main menu for beginners
-BEGINNER_MENU_KEYBOARD = [
-    [InlineKeyboardButton("👋 Welcome & Basics", callback_data="welcome")],
-    [InlineKeyboardButton("💰 Start with Bonus (R50 Free)", callback_data="bonus_path")],
-    [InlineKeyboardButton("💳 Start with Your Money", callback_data="direct_path")],
-    [InlineKeyboardButton("📈 Investment Options", callback_data="invest_options")],
-    [InlineKeyboardButton("🔄 Reinvest Profits", callback_data="reinvest")],
-    [InlineKeyboardButton("📊 My Investments", callback_data="my_investments")],
-    [InlineKeyboardButton("❓ Need Help?", callback_data="help_me")],
-    [InlineKeyboardButton("🌐 Website Links", callback_data="website_links")],
-]
-
-BACK_TO_BEGINNER_MENU_KEYBOARD = [[InlineKeyboardButton("⬅️ Back to Main Menu", callback_data="back_to_beginner_menu")]]
-
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle the /start command with beginner-friendly introduction."""
-    try:
-        user: Optional[User] = update.effective_user
-        if not user:
-            return
-            
-        chat_id = update.effective_chat.id if update.effective_chat else user.id
-        
-        # Add user to database
-        add_user(
-            chat_id=chat_id, 
-            username=user.username if user.username else None, 
-            first_name=user.first_name if user.first_name else None, 
-            last_name=user.last_name if user.last_name else None
-        )
-        
-        # Log command
-        log_command(chat_id, "/start")
-        
-        first_name = user.first_name if user.first_name else "there"
-        welcome_text = f"""
-👋 Hi {first_name}! Welcome to CapitalX Bot!
-
-I'm here to help you understand how to invest with CapitalX - even if you're new to investing!
-
-💡 **Quick Start:**
-• Click "👋 Welcome & Basics" to learn what we do
-• Click "💰 Start with Bonus" to try with FREE money
-• Click "💳 Start with Your Money" to invest your own funds
-
-Choose an option below to get started:
-"""
-        
-        reply_markup = InlineKeyboardMarkup(BEGINNER_MENU_KEYBOARD)
-        
-        if update.message:
-            await update.message.reply_text(welcome_text, reply_markup=reply_markup)
-        logger.info(f"Beginner start command handled for user {chat_id}")
-        
-    except Exception as e:
-        logger.error(f"Error in beginner start_command: {e}")
-        if update.message:
-            await update.message.reply_text("Sorry, something went wrong. Please try again.")
-
-async def handle_welcome(query):
-    """Handle welcome and basics section."""
-    text = """
-🌟 **Welcome to CapitalX!**
-
-We help you grow your money safely with simple investments.
-
-✅ **How It Works In Simple Steps:**
-1. **Join** - Sign up and get started
-2. **Choose** - Decide how you want to invest
-3. **Invest** - Put money into a plan
-4. **Earn** - Get your money back + profit in 12 hours to 6 days
-5. **Repeat** - Reinvest or withdraw your earnings
-
-💡 **Key Points:**
-• All investments return 100% profit
-• You can start with as little as R50
-• Your money is protected and secure
-• You're in control - choose what works for you
-• **One investment per tier plan allowed**
-
-Ready to learn how to get started?
-"""
-    reply_markup = InlineKeyboardMarkup(BACK_TO_BEGINNER_MENU_KEYBOARD)
-    await query.edit_message_text(text, reply_markup=reply_markup)
-
-async def handle_bonus_path(query):
-    """Handle bonus path explanation."""
-    text = """
-🎁 **Start with FREE Money - No Risk!**
-
-When you join CapitalX, you get R50 FREE! This is called a "bonus" and you can use it to try investing with zero risk.
-
-✅ **How It Works:**
-• Get R50 in your account instantly when you sign up
-• Use this to invest in our R70 plan (you only need R20 more)
-• After 12 hours, you get R140 back (R70 profit!)
-• No money risked - it's FREE to try!
-
-💡 **Perfect For:**
-• Complete beginners
-• People who want to try first
-• Anyone who wants to learn risk-free
-
-**Important Rule: One investment per tier plan allowed**
-You can invest in each tier plan once, but you can have multiple tier investments running simultaneously!
-
-Want to learn about investing with your own money instead?
-"""
-    reply_markup = InlineKeyboardMarkup(BACK_TO_BEGINNER_MENU_KEYBOARD)
-    await query.edit_message_text(text, reply_markup=reply_markup)
-
-async def handle_direct_path(query):
-    """Handle direct path explanation."""
-    text = """
-💳 **Start with Your Own Money**
-
-If you prefer to invest with your own funds, that's easy too!
-
-✅ **How It Works:**
-• Add at least R50 to your account
-• Choose any investment plan
-• All plans give 100% return in 12 hours to 6 days depending on investment size
-• You control how much you invest
-
-💰 **Minimum Deposit:** R50
-• Use card, bank transfer, Bitcoin, or vouchers
-• Quick and secure process
-• Available 24/7
-
-💡 **Perfect For:**
-• People who want to start immediately
-• Those who prefer using their own funds
-• Investors ready to commit
-
-**Important Rule: One investment per tier plan allowed**
-You can invest in each tier plan once, but you can have multiple tier investments running simultaneously!
-
-Both paths give you the same investment opportunities!
-"""
-    reply_markup = InlineKeyboardMarkup(BACK_TO_BEGINNER_MENU_KEYBOARD)
-    await query.edit_message_text(text, reply_markup=reply_markup)
-
-async def handle_invest_options(query):
-    """Handle investment options explanation."""
-    # Try to get the detailed investment information from the knowledge base
-    kb_content = search_kb("Investment", "companies")
+    """Handle the /start command with beginner-friendly welcome message."""
+    # Add or update user in database
+    user = update.effective_user
+    if user:
+        add_user(user.id, user.username, user.first_name, user.last_name)
+        log_command(user.id, "/start")
     
-    if kb_content and "tier" in kb_content.lower():
-        # Format the knowledge base content to be more readable
-        # Extract and format the tier progression table
-        if "#### Complete Tier Progression" in kb_content:
-            # Split the content to get the table part
-            parts = kb_content.split("#### Complete Tier Progression")
-            intro_part = parts[0]
-            table_and_beyond = parts[1] if len(parts) > 1 else ""
-            
-            # Extract just the tier information in a more readable format
-            readable_text = f"""
-📈 **Investment Options - Start Small, Grow Big**
+    # Check if this is a group chat
+    is_group = False
+    if update.effective_chat:
+        is_group = update.effective_chat.type in [ChatType.GROUP, ChatType.SUPERGROUP]
+    
+    # Personalized greeting
+    greeting = "Hello"
+    if user and user.first_name:
+        greeting = f"Hi {user.first_name}"
+    
+    # Different messages for private vs group chats
+    if is_group:
+        welcome_text = f"""{greeting}! 👋
 
-We have simple investment plans that double your money in 12 hours to 6 days!
+I'm the CapitalX Beginner Helper Bot. I'm here to help you and other group members learn about investing with CapitalX.
 
-✅ **All Plans:**
-• 100% guaranteed return
-• Duration varies from 12 hours to 6 days based on investment size
-• Start from just R70
-• Each plan doubles the previous one
-• **One investment per tier plan allowed**
+To get started, you can:
+• Send /start to see this menu
+• Ask me specific questions about CapitalX
+• Use the buttons below to explore different topics
 
-📊 **Complete Plan Progression:**
-1. R70 → R140 (R70 profit) - 12 hours
-2. R140 → R280 (R140 profit) - 18 hours
-3. R280 → R560 (R280 profit) - 24 hours
-4. R560 → R1,120 (R560 profit) - 30 hours
-5. R1,120 → R2,240 (R1,120 profit) - 36 hours
-6. R2,240 → R4,480 (R2,240 profit) - 2 days
-7. R4,480 → R8,960 (R4,480 profit) - 3 days
-8. R8,960 → R17,920 (R8,960 profit) - 4 days
-9. R17,920 → R35,840 (R17,920 profit) - 5 days
-10. R35,840 → R50,000 (R14,160 profit) - 6 days
+Note: For privacy, I recommend using me in a private chat for detailed investment tracking."""
+    else:
+        welcome_text = f"""{greeting}! 👋
 
-💎 **Investment Stages:**
-**Stage 1: Foundation Tier (R70 - R1,120)**
-Perfect for beginners to get started with small investments.
+Welcome to the CapitalX Beginner Helper Bot! I'm here to guide you through the basics of investing with CapitalX.
 
-**Stage 2: Growth Tier (R2,240 - R17,920)**
-For intermediate investors looking to scale their investments.
+Our platform offers two ways to start:
+1. Use your R50 free bonus to try investing
+2. Start with your own money
 
-**Stage 3: Premium Tier (R35,840 - R50,000)**
-For advanced investors with significant capital.
+I'll help you understand how both options work and guide you through the investment process."""
 
-🔄 **Can You Invest Again? YES, But Once Per Tier!**
-• You can invest in EACH tier plan once
-• You can have multiple tier investments running simultaneously
-• Each investment is independent and lasts 12 hours to 6 days
-• One investment per tier plan allowed
+    # Create beginner-friendly menu
+    keyboard = [
+        [InlineKeyboardButton("👋 Welcome & Basics", callback_data="welcome")],
+        [InlineKeyboardButton("💰 Start with Bonus (R50 Free)", callback_data="bonus_path")],
+        [InlineKeyboardButton("💳 Start with Your Money", callback_data="direct_path")],
+        [InlineKeyboardButton("📈 Investment Options", callback_data="investment_options")],
+        [InlineKeyboardButton("🔄 Reinvest Profits", callback_data="reinvest")],
+        [InlineKeyboardButton("📊 My Investments", callback_data="my_investments")],
+        [InlineKeyboardButton("❓ Need Help?", callback_data="help")],
+        [InlineKeyboardButton("🌐 Website Links", callback_data="links")]
+    ]
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    if update.message:
+        await update.message.reply_text(welcome_text, reply_markup=reply_markup)
 
-💡 **Getting Started:**
-Begin with the first plan (R70) to understand how it works, then grow as you gain confidence!
+async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle button presses with beginner-friendly explanations."""
+    query = update.callback_query
+    if not query:
+        return
+        
+    await query.answer()
+    
+    user = query.from_user
+    if user:
+        add_user(user.id, user.username, user.first_name, user.last_name)
+    
+    # Check if this is a group chat
+    is_group = False
+    if query.message and query.message.chat:
+        is_group = query.message.chat.type in [ChatType.GROUP, ChatType.SUPERGROUP]
+    
+    # Different responses based on button pressed
+    response_text = ""
+    if query.data == "welcome":
+        response_text = """🌟 *Welcome to CapitalX!*
 
-**Key Features of All Plans:**
-• Guaranteed 100% return on investment
-• Progressive duration that increases with investment amount (12 hours to 6 days)
-• Progressive investment amounts that increase with each tier
-• Higher returns for higher investment tiers
-"""
+CapitalX is an innovative investment platform that helps you grow your money through AI-powered trading strategies.
+
+*How it works:*
+1. Start with a small investment (from R70)
+2. Our AI trades on your behalf 24/7
+3. Watch your investment grow over time
+4. Withdraw your profits anytime
+
+*Key Benefits:*
+✅ No trading experience needed
+✅ AI-powered strategies
+✅ Flexible withdrawals
+✅ Transparent fee structure"""
+        
+    elif query.data == "bonus_path":
+        if is_group:
+            response_text = """💰 *Using Your R50 Bonus*
+
+In a group setting, I can explain how the bonus works, but for privacy reasons, I recommend continuing this conversation in a private chat with me.
+
+*How the R50 bonus works:*
+• Get R50 free when you join CapitalX
+• Use it to try our investment system risk-free
+• You can withdraw any profits you make
+• The bonus must be used within 7 days
+
+To track your bonus investments, please message me directly."""
         else:
-            # Fallback if we can't parse the table
-            readable_text = f"""
-📈 **Investment Options - Start Small, Grow Big**
+            response_text = """💰 *Using Your R50 Bonus*
 
-{kb_content}
+Great choice! Starting with your R50 bonus is a risk-free way to try CapitalX.
 
-🔄 **Can You Invest Again? YES, But Once Per Tier!**
-• You can invest in EACH tier plan once
-• You can have multiple tier investments running simultaneously
-• Each investment is independent and lasts 12 hours to 6 days
-• One investment per tier plan allowed
+*Here's how it works:*
+1. Your R50 bonus is automatically added to your account
+2. You can invest it in any of our tier plans
+3. Any profits are yours to keep
+4. You can withdraw profits anytime
 
-💡 **Getting Started:**
-Begin with the first plan to understand how it works, then grow as you gain confidence!
-"""
-    else:
-        # Fallback to hardcoded information if KB doesn't have detailed info
-        readable_text = """
-📈 **Investment Options - Start Small, Grow Big**
+*Important Rules:*
+• You can only invest once per tier
+• The bonus must be used within 7 days
+• You can combine bonus with your own money for larger investments
 
-We have simple investment plans that double your money in 12 hours to 6 days!
-
-✅ **All Plans:**
-• 100% guaranteed return
-• Duration varies from 12 hours to 6 days based on investment size
-• Start from just R70
-• Each plan doubles the previous one
-• **One investment per tier plan allowed**
-
-📊 **Complete Plan Progression:**
-1. R70 → R140 (R70 profit) - 12 hours
-2. R140 → R280 (R140 profit) - 18 hours
-3. R280 → R560 (R280 profit) - 24 hours
-4. R560 → R1,120 (R560 profit) - 30 hours
-5. R1,120 → R2,240 (R1,120 profit) - 36 hours
-6. R2,240 → R4,480 (R2,240 profit) - 2 days
-7. R4,480 → R8,960 (R4,480 profit) - 3 days
-8. R8,960 → R17,920 (R8,960 profit) - 4 days
-9. R17,920 → R35,840 (R17,920 profit) - 5 days
-10. R35,840 → R50,000 (R14,160 profit) - 6 days
-
-💎 **Investment Stages:**
-**Stage 1: Foundation Tier (R70 - R1,120)**
-Perfect for beginners to get started with small investments.
-
-**Stage 2: Growth Tier (R2,240 - R17,920)**
-For intermediate investors looking to scale their investments.
-
-**Stage 3: Premium Tier (R35,840 - R50,000)**
-For advanced investors with significant capital.
-
-🔄 **Can You Invest Again? YES, But Once Per Tier!**
-• You can invest in EACH tier plan once
-• You can have multiple tier investments running simultaneously
-• Each investment is independent and lasts 12 hours to 6 days
-• One investment per tier plan allowed
-
-💡 **Start Small:**
-Begin with the R70 plan to understand how it works, then grow!
-"""
-
-    reply_markup = InlineKeyboardMarkup(BACK_TO_BEGINNER_MENU_KEYBOARD)
-    await query.edit_message_text(readable_text, reply_markup=reply_markup)
-
-async def handle_reinvest(query):
-    """Handle reinvestment explanation."""
-    text = """
-🔄 **Can You Invest Again? YES, But Once Per Tier!**
-
-You can invest multiple times, but there's an important rule: **one investment per tier plan**.
-
-✅ **How It Works:**
-• You can invest in EACH tier plan once
-• You can have multiple tier investments running simultaneously
-• Each investment is independent and lasts 12 hours to 6 days
-
-📈 **Example:**
-1. Invest in Starter Plan (R70) - 12 hours
-2. At the same time, invest in Bronze Plan (R140) - 18 hours
-3. When Starter Plan completes, reinvest in Silver Plan (R280) - 24 hours
-4. Continue investing in different tiers with their respective durations
-
-💡 **Key Points:**
-• One investment per tier plan allowed
-• You can invest in multiple different tiers at the same time
-• Each tier investment runs independently for its specific duration (12 hours to 6 days)
-• Reinvest profits in higher tier plans when ready
-
-💰 **Bonus Path Investors:**
-• Use your R50 bonus to start with a tier plan
-• Reinvest profits from completed investments
-• Continue compounding your growth with different tiers
-
-💳 **Direct Path Investors:**
-• Start with your own money in any tier plan
-• Reinvest profits from each completed investment
-• Build wealth through compound growth across multiple tiers
-
-This system ensures fair access to all investment opportunities for everyone!
-
-Start with one investment to understand the system, then expand to multiple tier investments!
-"""
-    reply_markup = InlineKeyboardMarkup(BACK_TO_BEGINNER_MENU_KEYBOARD)
-    await query.edit_message_text(text, reply_markup=reply_markup)
-
-async def handle_my_investments(query):
-    """Handle user's current investments."""
-    chat_id = query.from_user.id if query.from_user else 0
+Would you like to see the investment options?"""
     
-    # Get user's active investments
-    investments = get_user_active_investments(chat_id)
+    elif query.data == "direct_path":
+        if is_group:
+            response_text = """💳 *Investing Your Own Money*
+
+In a group setting, I can explain how direct investments work, but for privacy reasons, I recommend continuing this conversation in a private chat with me.
+
+*How direct investments work:*
+• Deposit your own money to start investing
+• Choose from our tier investment plans
+• Track your investments and profits
+• Withdraw anytime with low fees
+
+To track your investments, please message me directly."""
+        else:
+            response_text = """💳 *Investing Your Own Money*
+
+Excellent! Investing your own money gives you full control over your investments.
+
+*Here's how it works:*
+1. Deposit money into your CapitalX account
+2. Choose an investment tier that matches your budget
+3. Our AI starts trading on your behalf
+4. Watch your investment grow over time
+
+*Benefits of Direct Investment:*
+• Full control over your investment amount
+• No time limits on your funds
+• Combine with bonus for larger investments
+• Track all investments in one place
+
+Would you like to see the investment options?"""
     
-    if investments:
-        text = "📊 **Your Current Investments**\n\n"
-        for inv in investments:
-            # Convert hours to readable format
-            if inv['duration_hours'] < 24:
-                duration = f"{inv['duration_hours']} hours"
-            else:
-                days = inv['duration_hours'] // 24
-                hours = inv['duration_hours'] % 24
-                if hours == 0:
-                    duration = f"{days} days"
-                else:
-                    duration = f"{days} days, {hours} hours"
+    elif query.data == "investment_options":
+        response_text = """📈 *CapitalX Investment Options*
+
+We offer a structured 3-stage investment system:
+
+*Foundation Tier (Beginner Friendly):*
+• R70 - R1,120
+• Perfect for trying the system
+
+*Growth Tier (Intermediate):*
+• R2,240 - R17,920
+• For growing your investment
+
+*Premium Tier (Advanced):*
+• R35,840 - R50,000
+• For maximum growth potential
+
+*Important Rule:* You can only invest once per tier.
+
+Would you like details about a specific tier?"""
+    
+    elif query.data == "reinvest":
+        response_text = """🔄 *Reinvesting Your Profits*
+
+CapitalX allows you to reinvest your profits to grow your investment faster!
+
+*How Reinvestment Works:*
+1. When your investment completes, you receive profits
+2. You can choose to withdraw or reinvest
+3. Reinvesting moves you to the next tier
+4. Each tier doubles your investment amount
+
+*Example:*
+• Start with R70 (Tier 1)
+• After completion, reinvest R140 (Tier 2)
+• Continue doubling with each reinvestment
+
+*Important:* You can only invest once per tier, so plan your reinvestments wisely!"""
+    
+    elif query.data == "my_investments":
+        if is_group:
+            response_text = """📊 *Your Investments*
+
+For privacy reasons, I recommend checking your investments in a private chat with me.
+
+In a private chat, I can show you:
+• All your current investments
+• Investment status and progress
+• Profit projections
+• Withdrawal options
+
+Please message me directly to view your investments."""
+        else:
+            # Get user investments from database
+            investments = []
+            if user:
+                investments = get_user_investments(user.id)
             
-            text += f"💰 **Tier {inv['tier_level']} Plan**\n"
-            text += f"• Investment: R{inv['investment_amount']:.0f}\n"
-            text += f"• Expected Return: R{inv['expected_return']:.0f}\n"
-            text += f"• Duration: {duration}\n\n"
-    else:
-        text = """
-📊 **Your Investments**
+            if investments:
+                response_text = "*📊 Your Current Investments:*\n\n"
+                for investment in investments:
+                    response_text += f"• Tier {investment['tier_level']}: R{investment['investment_amount']} - {investment['status']}\n"
+                response_text += "\nYou can track your investment progress and projected profits here."
+            else:
+                response_text = """📊 *Your Investments*
 
 You don't have any active investments yet.
 
-💡 **Getting Started:**
-• Click "💰 Start with Bonus" to try with FREE money
-• Click "💳 Start with Your Money" to invest your own funds
-• Click "📈 Investment Options" to see all available plans
+To get started:
+1. Choose between bonus (R50 free) or direct deposit
+2. Select an investment tier
+3. Complete your investment
 
-Remember: One investment per tier plan allowed, but you can invest in multiple tiers simultaneously!
-"""
+Would you like to start investing now?"""
     
-    reply_markup = InlineKeyboardMarkup(BACK_TO_BEGINNER_MENU_KEYBOARD)
-    await query.edit_message_text(text, reply_markup=reply_markup)
+    elif query.data == "help":
+        response_text = """❓ *Need Help?*
 
-async def handle_help_me(query):
-    """Handle help section."""
-    text = """
-❓ **Need Help? You're Not Alone!**
+I'm here to help you understand CapitalX! Here are the ways you can get assistance:
 
-We're here to help you every step of the way.
+*Quick Help:*
+• Use the menu buttons to explore topics
+• Ask specific questions about investing
+• Check our website for detailed guides
 
-📞 **Ways to Get Help:**
-• Click any menu option to learn more
-• Type your question in plain English
-• Use /search [your topic] for specific info
-• Contact our support team anytime
+*Contact Support:*
+• Visit https://capitalx-rtn.onrender.com for the official website
+• Email support@capitalx.com for technical issues
+• Check our FAQ section for common questions
 
-💡 **Common Questions:**
-• How do I add money? → Click "💳 Start with Your Money"
-• How do I use my bonus? → Click "💰 Start with Bonus"
-• What are the investment plans? → Click "📈 Investment Options"
-• How do I withdraw earnings? → All plans explain this
+Is there something specific you'd like to know about?"""
+    
+    elif query.data == "links":
+        response_text = """🌐 *CapitalX Links*
 
-We're here to make investing simple for everyone!
-"""
-    reply_markup = InlineKeyboardMarkup(BACK_TO_BEGINNER_MENU_KEYBOARD)
-    await query.edit_message_text(text, reply_markup=reply_markup)
+Here are the important links you need:
 
-async def handle_back_to_beginner_menu(query):
-    """Return to the beginner main menu."""
-    first_name = query.from_user.first_name if query.from_user and query.from_user.first_name else "there"
-    welcome_text = f"""
-👋 Welcome back, {first_name}!
+*Official Website:* https://capitalx-rtn.onrender.com
+*Registration:* https://capitalx-rtn.onrender.com/register
+*Login:* https://capitalx-rtn.onrender.com/login
+*FAQ:* https://capitalx-rtn.onrender.com/faq
+*Support:* https://capitalx-rtn.onrender.com/support
 
-Choose what you'd like to learn about:
-"""
-    reply_markup = InlineKeyboardMarkup(BEGINNER_MENU_KEYBOARD)
-    await query.edit_message_text(welcome_text, reply_markup=reply_markup)
+*Social Media:*
+• Telegram: @CapitalXOfficial
+• Twitter: @CapitalXPlatform
+• Facebook: /CapitalXPlatform
 
-async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle inline button presses with beginner-friendly responses."""
-    try:
-        query = update.callback_query
-        if not query:
-            return
+Always make sure you're using official links to protect your account."""
+    
+    else:
+        response_text = "I'm not sure what you're looking for. Please use the menu buttons to navigate."
+    
+    # Add navigation options at the end
+    keyboard = [
+        [InlineKeyboardButton("📋 Main Menu", callback_data="main_menu")],
+        [InlineKeyboardButton("👋 Back to Start", callback_data="back_to_start")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text(response_text, reply_markup=reply_markup, parse_mode='Markdown')
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle regular text messages with beginner-friendly responses."""
+    user = update.effective_user
+    message_text = ""
+    if update.message and update.message.text:
+        message_text = update.message.text
+    
+    # Add user to database
+    if user:
+        add_user(user.id, user.username, user.first_name, user.last_name)
+        log_command(user.id, f"message: {message_text}")
+    
+    # Check if this is a group chat
+    is_group = False
+    if update.effective_chat:
+        is_group = update.effective_chat.type in [ChatType.GROUP, ChatType.SUPERGROUP]
+    
+    # Simple response system for common questions
+    message_lower = message_text.lower()
+    
+    if any(word in message_lower for word in ["hello", "hi", "hey"]):
+        greeting = "Hello"
+        if user and user.first_name:
+            greeting = f"Hi {user.first_name}"
             
-        await query.answer()
-        
-        if not query.from_user:
-            return
-            
-        chat_id = query.from_user.id
-        data = query.data if query.data else ""
-        log_command(chat_id, f"button_{data}")
-        
-        if data == "welcome":
-            await handle_welcome(query)
-        elif data == "bonus_path":
-            await handle_bonus_path(query)
-        elif data == "direct_path":
-            await handle_direct_path(query)
-        elif data == "invest_options":
-            await handle_invest_options(query)
-        elif data == "reinvest":
-            await handle_reinvest(query)
-        elif data == "my_investments":
-            await handle_my_investments(query)
-        elif data == "help_me":
-            await handle_help_me(query)
-        elif data == "website_links":
-            await handle_website_links(query)
-        elif data == "back_to_beginner_menu":
-            await handle_back_to_beginner_menu(query)
+        if is_group:
+            response_text = f"{greeting}! 👋\n\nI'm the CapitalX Beginner Helper. Send /start to see what I can help you with."
         else:
-            await query.edit_message_text("Unknown button pressed. Please try again.")
-        
-        logger.info(f"Beginner button callback '{data}' handled for user {chat_id}")
-        
-    except Exception as e:
-        logger.error(f"Error in beginner button_callback: {e}")
-        pass
-
-async def handle_website_links(query):
-    """Handle website links section."""
-    text = """
-🌐 **Important CapitalX Website Links**
-
-Here are the key links you need to know:
-
-🔗 **Main Website**
-• URL: https://capitalx-rtn.onrender.com/
-• This is where you access your dashboard and investments
-
-📝 **Registration Page**
-• URL: https://capitalx-rtn.onrender.com/register/
-• Create your account here to get started
-
-💡 **Tips for Using These Links:**
-• Bookmark the main website for easy access
-• Use the registration link to create your account
-• All investment activities happen on the main site
-• You can access these links from any device
-
-Need help accessing the website or creating an account?
-Click "❓ Need Help?" below for more assistance.
-"""
-    reply_markup = InlineKeyboardMarkup(BACK_TO_BEGINNER_MENU_KEYBOARD)
-    await query.edit_message_text(text, reply_markup=reply_markup)
-
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle user messages with beginner-friendly responses."""
-    try:
-        if not update.effective_chat or not update.message or not update.message.text:
-            return
-            
-        chat_id = update.effective_chat.id
-        message_text = update.message.text.strip()
-        log_command(chat_id, f"message: {message_text[:50]}...")
-        
-        # Handle specific common questions with targeted responses
-        message_lower = message_text.lower()
-        
-        # Website/URL questions
-        if any(keyword in message_lower for keyword in ["website", "link", "url", "site", "capitalx", "register", "registration"]):
-            response = """
-🌐 **CapitalX Website Links**
-
-Here are the key links you need to know:
-
-🔗 **Main Website**
-• URL: https://capitalx-rtn.onrender.com/
-• This is where you access your dashboard and investments
-
-📝 **Registration Page**
-• URL: https://capitalx-rtn.onrender.com/register/
-• Create your account here to get started
-
-💡 **Tips for Using These Links:**
-• Bookmark the main website for easy access
-• Use the registration link to create your account
-• All investment activities happen on the main site
-"""
-        
-        # Help-related questions
-        elif any(keyword in message_lower for keyword in ["help", "support", "contact"]):
-            response = """
-❓ **Need Help?**
-
-Click the "❓ Need Help?" button in the main menu to get assistance.
-
-You can also:
-• Ask questions in plain English
-• Click "🌐 Website Links" for important URLs
-• Contact our support team through the website
-"""
-        
-        # Investment questions
-        elif any(keyword in message_lower for keyword in ["invest", "tier", "plan", "r70", "return", "profit"]):
-            response = """
-📈 **Investment Information**
-
-Click the "📈 Investment Options" button in the main menu to see all investment plans.
-
-Our system has 10 tier plans that start from R70 and go up to R50,000.
-Each plan doubles your money in 12 hours to 6 days.
-"""
-        
-        # Bonus questions
-        elif any(keyword in message_lower for keyword in ["bonus", "free", "r50"]):
-            response = """
-🎁 **Bonus Information**
-
-Click the "💰 Start with Bonus (R50 Free)" button to learn about getting free money to start investing.
-
-You get R50 free when you register - no risk investment opportunity!
-"""
-        
-        # Default response
+            response_text = f"{greeting}! 👋\n\nI'm your CapitalX Beginner Helper. How can I assist you today?"
+    
+    elif any(word in message_lower for word in ["invest", "investment", "tier"]):
+        if is_group:
+            response_text = "I see you're interested in investments! For detailed information about investment options, please send /start or message me directly."
         else:
-            response = """
-I understand you're looking for information. Try clicking one of these buttons:
+            response_text = "I'd be happy to help you learn about investing with CapitalX! Our platform offers a structured 3-stage investment system:\n\n1. Foundation Tier (R70 - R1,120) - Perfect for beginners\n2. Growth Tier (R2,240 - R17,920) - For intermediate investors\n3. Premium Tier (R35,840 - R50,000) - For advanced investors\n\nWould you like to know more about a specific tier?"
+    
+    elif any(word in message_lower for word in ["bonus", "free", "r50"]):
+        if is_group:
+            response_text = "You mentioned the bonus! For details about using your R50 free bonus, please send /start or message me directly."
+        else:
+            response_text = "Great! Our R50 bonus is a risk-free way to try CapitalX. You can use it to invest in any of our tier plans, and any profits are yours to keep. The bonus must be used within 7 days.\n\nWould you like to learn how to use your bonus?"
+    
+    elif any(word in message_lower for word in ["help", "support", "confused"]):
+        if is_group:
+            response_text = "Need help? Please send /start to see the main menu, or message me directly for personalized assistance."
+        else:
+            response_text = "I'm here to help! You can:\n1. Send /start to see the main menu\n2. Ask me specific questions\n3. Visit our website at https://capitalx-rtn.onrender.com\n4. Contact support at support@capitalx.com\n\nWhat do you need help with?"
+    
+    else:
+        if is_group:
+            response_text = "I received your message! For the best experience with CapitalX information, please send /start to see the menu, or message me directly for personalized help."
+        else:
+            response_text = "I'm here to help you learn about CapitalX! You can:\n1. Send /start to see the main menu\n2. Ask me specific questions about investing\n3. Explore our investment options\n\nWhat would you like to know?"
+    
+    if update.message:
+        await update.message.reply_text(response_text)
 
-• "👋 Welcome & Basics" - Learn about CapitalX
-• "💰 Start with Bonus" - Use free R50 to invest
-• "💳 Start with Your Money" - Invest your own funds
-• "📈 Investment Options" - See all investment plans
-• "🌐 Website Links" - Get important website URLs
-• "❓ Need Help?" - Get assistance
-
-You can also ask questions in plain English!
-"""
+# Add new handler for main menu navigation
+async def main_menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle main menu navigation."""
+    query = update.callback_query
+    if not query:
+        return
         
-        reply_markup = InlineKeyboardMarkup(BEGINNER_MENU_KEYBOARD)
-        await update.message.reply_text(response, reply_markup=reply_markup)
-        
-    except Exception as e:
-        logger.error(f"Error in handle_message: {e}")
-        if update.message:
-            await update.message.reply_text("Sorry, I couldn't process your message. Please try again.")
+    await query.answer()
+    
+    # Show the main menu again
+    keyboard = [
+        [InlineKeyboardButton("👋 Welcome & Basics", callback_data="welcome")],
+        [InlineKeyboardButton("💰 Start with Bonus (R50 Free)", callback_data="bonus_path")],
+        [InlineKeyboardButton("💳 Start with Your Money", callback_data="direct_path")],
+        [InlineKeyboardButton("📈 Investment Options", callback_data="investment_options")],
+        [InlineKeyboardButton("🔄 Reinvest Profits", callback_data="reinvest")],
+        [InlineKeyboardButton("📊 My Investments", callback_data="my_investments")],
+        [InlineKeyboardButton("❓ Need Help?", callback_data="help")],
+        [InlineKeyboardButton("🌐 Website Links", callback_data="links")]
+    ]
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await query.edit_message_text("📋 *Main Menu*", reply_markup=reply_markup, parse_mode='Markdown')

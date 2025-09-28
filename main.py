@@ -52,7 +52,8 @@ else:
     from beginner_handlers import (
         start_command,
         button_callback,
-        handle_message
+        handle_message,
+        main_menu_callback
     )
     from database import init_database
     from kb import refresh_knowledge_base
@@ -126,6 +127,7 @@ else:
         # Add beginner-friendly handlers
         application.add_handler(CommandHandler("start", start_command))
         application.add_handler(CallbackQueryHandler(button_callback))
+        application.add_handler(CallbackQueryHandler(main_menu_callback, pattern='^(main_menu|back_to_start)$'))
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
         # Add error handler
