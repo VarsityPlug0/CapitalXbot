@@ -27,7 +27,7 @@ Fill in the following information:
 - **Root Directory**: Leave empty (or specify if your code is in a subdirectory)
 - **Environment**: Python 3
 - **Build Command**: `pip install -r requirements.txt`
-- **Start Command**: `python main.py`
+- **Start Command**: `python health_check.py`
 
 ### 4. Configure Environment Variables
 In the "Advanced" section, add the following environment variable:
@@ -43,13 +43,11 @@ Click "Create Web Service" to start the deployment process.
 
 ## Important Notes
 
-### Web Service vs Worker
-The bot is configured to run as a worker process. After deployment, you may need to:
-1. Go to your service dashboard on Render
-2. Click on "Settings"
-3. Change the service type from "Web Service" to "Worker"
-
-This ensures the bot runs continuously without expecting HTTP requests.
+### Web Service Approach
+Unlike traditional Telegram bots that run as worker processes, this bot uses a hybrid approach:
+- The bot runs in a background thread
+- A Flask web service runs on the main thread to satisfy Render's port binding requirement
+- This approach prevents the 409 conflict error by ensuring only one bot instance runs
 
 ### Environment Variables
 Make sure to set the `TELEGRAM_BOT_TOKEN` environment variable in the Render dashboard. Never hardcode your token in the source code.
@@ -70,6 +68,13 @@ The free tier of Render will put your service to sleep after 15 minutes of inact
 1. **Bot not responding**: Check that the `TELEGRAM_BOT_TOKEN` is correctly set
 2. **Import errors**: Ensure all dependencies in requirements.txt are correctly installed
 3. **Database errors**: If using free tier, data may be lost between deployments
+4. **409 Conflict Error**: This indicates multiple bot instances are trying to connect with the same token. Our health_check.py solution ensures only one instance runs.
+
+### Health Check Endpoints
+The web service provides the following endpoints for monitoring:
+- `/health` - Basic health check
+- `/status` - Detailed status information
+- `/` - Service information
 
 ### Logs
 You can view your application logs in the Render dashboard:

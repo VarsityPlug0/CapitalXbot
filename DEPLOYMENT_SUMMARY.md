@@ -12,9 +12,9 @@ python-3.9
 ```
 
 ### 2. Procfile
-Default process file for Render (worker process):
+Default process file for Render (web service with health check):
 ```
-worker: python main.py
+web: python health_check.py
 ```
 
 ### 3. Procfile.web
@@ -30,8 +30,9 @@ worker: python main.py
 ```
 
 ### 5. health_check.py
-Simple Flask application that provides health check endpoints:
+Flask application that runs the bot in a background thread and provides health check endpoints:
 - `/health` - Returns JSON health status
+- `/status` - Returns detailed status information
 - `/` - Returns service information
 
 ### 6. RENDER_DEPLOYMENT_GUIDE.md
@@ -49,15 +50,17 @@ flask==2.3.3
 
 ## Deployment Options
 
-### Option 1: Worker Process (Recommended)
-- Uses `Procfile` or `Procfile.worker`
-- Runs the bot continuously as a background process
-- Ideal for Telegram bots that need to be always available
-
-### Option 2: Web Process with Health Check
-- Uses `Procfile.web`
+### Option 1: Web Service with Health Check (Recommended)
+- Uses `Procfile` or `Procfile.web`
+- Runs the bot in a background thread
 - Provides HTTP endpoints for monitoring
-- Can be combined with worker process using Render's multiple services feature
+- Binds to Render's required PORT environment variable
+- Prevents 409 conflict errors by ensuring single bot instance
+
+### Option 2: Worker Process
+- Uses `Procfile.worker`
+- Runs the bot continuously as a background process
+- May encounter 409 conflict errors if multiple instances are started
 
 ## Environment Variables Required
 
@@ -74,12 +77,15 @@ flask==2.3.3
 3. Connect your GitHub account and select the repository
 4. Configure the service with:
    - Build Command: `pip install -r requirements.txt`
-   - Start Command: `python main.py`
+   - Start Command: `python health_check.py`
 5. Add `TELEGRAM_BOT_TOKEN` as an environment variable
 6. Deploy the service
 
 ### Service Type Configuration
-After deployment, change the service type from "Web Service" to "Worker" in Render settings for optimal bot performance.
+The bot is configured to run as a web service with health check endpoints. This approach:
+- Prevents 409 conflict errors by ensuring only one bot instance runs
+- Binds to Render's required PORT environment variable
+- Provides monitoring endpoints for service health
 
 ## Important Considerations
 
@@ -94,7 +100,7 @@ After deployment, change the service type from "Web Service" to "Worker" in Rend
 - Consider upgrading to paid plan for production bots
 
 ### Monitoring
-- Health check endpoints available at `/health` and `/`
+- Health check endpoints available at `/health`, `/status`, and `/`
 - Render dashboard provides log access for troubleshooting
 - Set up alerts for service downtime
 
@@ -113,10 +119,12 @@ After deployment, change the service type from "Web Service" to "Worker" in Rend
 ## Troubleshooting
 
 ### Common Issues
-1. **Bot not responding**: Verify `TELEGRAM_BOT_TOKEN` is correctly set
-2. **Import errors**: Check that all dependencies install correctly
-3. **Database errors**: Free tier data loss between deployments
-4. **Service sleeping**: Upgrade from free tier for 24/7 availability
+1. **409 Conflict Error**: Multiple bot instances trying to connect with same token. Solution: Use health_check.py which ensures single instance.
+2. **Bot not responding**: Verify `TELEGRAM_BOT_TOKEN` is correctly set
+3. **Import errors**: Check that all dependencies install correctly
+4. **Database errors**: Free tier data loss between deployments
+5. **Service sleeping**: Upgrade from free tier for 24/7 availability
+6. **No Open Ports Detected**: Use health_check.py which binds to PORT environment variable
 
 ### Logs and Debugging
 - Access logs through Render dashboard
@@ -152,4 +160,4 @@ After deployment, change the service type from "Web Service" to "Worker" in Rend
 - [@BotFather](https://t.me/BotFather) - Telegram bot token management
 
 ## Conclusion
-The CapitalX Telegram bot is now fully prepared for deployment on Render with multiple deployment options and comprehensive documentation. The bot can be deployed as a simple worker process or with additional health check capabilities for monitoring.
+The CapitalX Telegram bot is now fully prepared for deployment on Render with a web service approach that prevents 409 conflict errors and binds to the required PORT environment variable. Comprehensive documentation is provided for easy deployment and troubleshooting.

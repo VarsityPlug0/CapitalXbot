@@ -77,22 +77,6 @@ The bot is configured to use only beginner-friendly features and automatically m
 ## Support
 For issues with the bot, contact the development team. For CapitalX platform issues, use the links provided in the bot to access the official support channels.
 
-# CapitalX Telegram Support Bot
-
-A production-ready Telegram bot built with Python that provides intelligent support for the CapitalX investment platform. The bot features interactive navigation, SQLite database integration, web scraping for real-time knowledge base updates, and comprehensive user support.
-
-## Features
-
-- 🤖 Interactive button navigation
-- 🌐 **Real-time knowledge base from CapitalX website**
-- 🔍 **Intelligent search functionality**
-- 📊 User data storage and analytics
-- 🔒 Secure token management
-- 📝 Command logging
-- 🛡️ Comprehensive error handling
-- 🏗️ Modular, extensible architecture
-- 🔄 **Automatic knowledge base updates**
-
 ## Project Structure
 
 ```
