@@ -7,7 +7,9 @@ A simplified version of the CapitalX Telegram bot for new users.
 import logging
 import os
 import sys
+import time
 from dotenv import load_dotenv
+from telegram.error import Conflict
 
 # Check if running on Render
 render_env = os.environ.get('RENDER')
@@ -71,6 +73,11 @@ else:
     async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle errors gracefully."""
         logger.error(f"Exception while handling an update: {context.error}")
+
+        # Handle specific error types
+        if isinstance(context.error, Conflict):
+            logger.error("Conflict error: Another bot instance is running. Please stop other instances.")
+            return
 
         # Check if update is a Telegram Update object
         if isinstance(update, Update) and update.effective_chat:
@@ -137,7 +144,19 @@ else:
         logger.info("Starting beginner-friendly bot...")
         print("\n🚀 Starting CapitalX Beginner-Friendly Telegram bot...")
         print("Press Ctrl+C to stop the bot.")
-        application.run_polling()
+        
+        try:
+            application.run_polling()
+        except Conflict:
+            logger.error("Conflict error: Another bot instance is running. Please stop other instances.")
+            print("\n❌ Conflict error: Another bot instance is running.")
+            print("Please make sure only one instance of the bot is running.")
+            print("Check if the bot is running on Render or another local instance.")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"Unexpected error: {e}")
+            print(f"\n❌ Unexpected error: {e}")
+            sys.exit(1)
 
 
     if __name__ == '__main__':

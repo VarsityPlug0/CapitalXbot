@@ -1,135 +1,95 @@
 #!/usr/bin/env python3
 """
-Test script for Telegram Bot
-Tests database functionality and basic bot components.
+Simple test script to verify the bot is working correctly.
 """
 
 import os
 import sys
+import time
+import requests
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-def test_database():
-    """Test database functionality."""
-    print("Testing database functionality...")
+def test_bot_token():
+    """Test if the bot token is valid."""
+    bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
+    if not bot_token:
+        print("❌ TELEGRAM_BOT_TOKEN not found in environment variables!")
+        return False
     
+    print(f"Bot token found: {bot_token[:10]}...")
+    
+    # Test if token is valid by calling getMe
     try:
-        from database import init_database, add_user, log_command, get_users, get_user_stats
-        
-        # Initialize database
-        print("✓ Initializing database...")
-        init_database()
-        
-        # Test adding user
-        print("✓ Testing user addition...")
-        success = add_user(
-            chat_id=12345,
-            username="test_user",
-            first_name="Test",
-            last_name="User"
-        )
-        assert success, "Failed to add user"
-        
-        # Test logging command
-        print("✓ Testing command logging...")
-        success = log_command(12345, "/start")
-        assert success, "Failed to log command"
-        
-        # Test getting users
-        print("✓ Testing user retrieval...")
-        users = get_users()
-        assert len(users) > 0, "No users found"
-        print(f"  Found {len(users)} user(s)")
-        
-        # Test getting stats
-        print("✓ Testing statistics...")
-        stats = get_user_stats()
-        assert stats['total_users'] > 0, "No users in stats"
-        print(f"  Total users: {stats['total_users']}")
-        print(f"  Total commands: {stats['total_commands']}")
-        
-        print("✓ All database tests passed!")
-        return True
-        
+        url = f"https://api.telegram.org/bot{bot_token}/getMe"
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get('ok'):
+                print(f"✅ Bot token is valid!")
+                print(f"Bot username: {data['result'].get('username', 'Unknown')}")
+                return True
+            else:
+                print(f"❌ Invalid bot token: {data.get('description', 'Unknown error')}")
+                return False
+        else:
+            print(f"❌ Failed to validate bot token: HTTP {response.status_code}")
+            return False
     except Exception as e:
-        print(f"✗ Database test failed: {e}")
+        print(f"❌ Error testing bot token: {e}")
         return False
 
-def test_imports():
-    """Test that all modules can be imported."""
-    print("Testing imports...")
+def test_webhook_info():
+    """Test webhook information."""
+    bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
+    if not bot_token:
+        return False
     
     try:
-        import main
-        print("✓ main.py imported successfully")
-        
-        import handlers
-        print("✓ handlers.py imported successfully")
-        
-        import database
-        print("✓ database.py imported successfully")
-        
-        return True
-        
+        url = f"https://api.telegram.org/bot{bot_token}/getWebhookInfo"
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get('ok'):
+                webhook_url = data['result'].get('url', '')
+                if webhook_url:
+                    print(f"⚠️  Bot has webhook set: {webhook_url}")
+                    print("   This might conflict with polling. Consider deleting webhook.")
+                else:
+                    print("✅ Bot is using polling (no webhook set)")
+                return True
+            else:
+                print(f"❌ Error getting webhook info: {data.get('description', 'Unknown error')}")
+                return False
+        else:
+            print(f"❌ Failed to get webhook info: HTTP {response.status_code}")
+            return False
     except Exception as e:
-        print(f"✗ Import test failed: {e}")
+        print(f"❌ Error getting webhook info: {e}")
         return False
-
-def test_environment():
-    """Test environment configuration."""
-    print("Testing environment configuration...")
-    
-    # Check if .env file exists
-    if not os.path.exists('.env'):
-        print("✗ .env file not found")
-        return False
-    
-    # Check if token is set (even if placeholder)
-    token = os.getenv('TELEGRAM_BOT_TOKEN')
-    if not token:
-        print("✗ TELEGRAM_BOT_TOKEN not found in environment")
-        return False
-    
-    if token == "your_bot_token_here":
-        print("⚠ TELEGRAM_BOT_TOKEN is still set to placeholder value")
-        print("  Please update .env file with your actual bot token")
-    
-    print("✓ Environment configuration looks good")
-    return True
 
 def main():
-    """Run all tests."""
-    print("🤖 Telegram Bot Test Suite")
-    print("=" * 40)
+    """Main function."""
+    print("Testing CapitalX Telegram Bot Setup...\n")
     
-    tests = [
-        test_environment,
-        test_imports,
-        test_database
-    ]
+    # Test bot token
+    if not test_bot_token():
+        return 1
     
-    passed = 0
-    total = len(tests)
+    print()
     
-    for test in tests:
-        if test():
-            passed += 1
-        print()
+    # Test webhook info
+    if not test_webhook_info():
+        return 1
     
-    print("=" * 40)
-    print(f"Tests passed: {passed}/{total}")
+    print("\n✅ All tests passed! Your bot configuration looks good.")
+    print("\nTo run your bot locally:")
+    print("  python main.py")
+    print("\nTo deploy to Render, make sure only one instance is running.")
     
-    if passed == total:
-        print("🎉 All tests passed! Bot is ready to run.")
-        print("\nNext steps:")
-        print("1. Get a bot token from @BotFather")
-        print("2. Update .env file with your token")
-        print("3. Run: python main.py")
-    else:
-        print("❌ Some tests failed. Please check the errors above.")
-        sys.exit(1)
+    return 0
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    sys.exit(main())

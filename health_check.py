@@ -12,6 +12,7 @@ import logging
 import sys
 import subprocess
 import threading
+import signal
 
 # Load environment variables
 load_dotenv()
@@ -29,6 +30,9 @@ bot_status = {
     "errors": []
 }
 
+# Global variable to store bot process
+bot_process = None
+
 def update_bot_status(status, error=None):
     """Update the bot status."""
     global bot_status
@@ -43,6 +47,12 @@ def update_bot_status(status, error=None):
 @app.route('/health')
 def health_check():
     """Simple health check endpoint."""
+    # Check if bot process is still running
+    global bot_process
+    if bot_process and bot_process.poll() is not None:
+        # Process has terminated
+        update_bot_status(False)
+    
     return jsonify({
         "status": "healthy",
         "service": "CapitalX-Telegram-Bot",
@@ -54,6 +64,12 @@ def health_check():
 @app.route('/status')
 def status_check():
     """Detailed status endpoint."""
+    # Check if bot process is still running
+    global bot_process
+    if bot_process and bot_process.poll() is not None:
+        # Process has terminated
+        update_bot_status(False)
+        
     return jsonify({
         "status": "running" if bot_status["running"] else "stopped",
         "service": "CapitalX-Telegram-Bot",
@@ -61,15 +77,45 @@ def status_check():
         "bot_status": bot_status
     })
 
+@app.route('/restart')
+def restart_bot():
+    """Restart the bot process."""
+    global bot_process
+    
+    # Terminate existing process if running
+    if bot_process:
+        try:
+            bot_process.terminate()
+            bot_process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            bot_process.kill()
+        except Exception as e:
+            logger.error(f"Error terminating bot process: {e}")
+    
+    # Start new process
+    bot_process = start_bot_process()
+    
+    return jsonify({
+        "status": "restarted",
+        "bot_running": bot_status["running"]
+    })
+
 @app.route('/')
 def home():
     """Home endpoint with service information."""
+    # Check if bot process is still running
+    global bot_process
+    if bot_process and bot_process.poll() is not None:
+        # Process has terminated
+        update_bot_status(False)
+        
     return jsonify({
         "message": "CapitalX Telegram Bot Web Service",
         "description": "This service runs the CapitalX Telegram bot and provides health check endpoints",
         "endpoints": {
             "health": "/health",
             "status": "/status",
+            "restart": "/restart",
             "info": "/"
         },
         "bot_running": bot_status["running"]
@@ -78,13 +124,16 @@ def home():
 def start_bot_process():
     """Start the Telegram bot in a separate process."""
     try:
+        # Set environment variable to indicate we're running from health_check
+        env = os.environ.copy()
+        env['HEALTH_CHECK_IMPORT'] = 'true'
+        
         # Start the bot as a separate process
-        bot_process = subprocess.Popen([sys.executable, "-c", """
-import os
-os.environ['HEALTH_CHECK_IMPORT'] = 'true'
-from main import main
-main()
-"""])
+        bot_process = subprocess.Popen([
+            sys.executable, "-c", 
+            "from main import main; main()"
+        ], env=env)
+        
         update_bot_status(True)
         logger.info("Starting Telegram bot in separate process...")
         return bot_process
@@ -93,7 +142,27 @@ main()
         update_bot_status(False, e)
         return None
 
+def signal_handler(sig, frame):
+    """Handle shutdown signals."""
+    global bot_process
+    logger.info("Received shutdown signal, terminating bot process...")
+    
+    if bot_process:
+        try:
+            bot_process.terminate()
+            bot_process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            bot_process.kill()
+        except Exception as e:
+            logger.error(f"Error terminating bot process: {e}")
+    
+    sys.exit(0)
+
 if __name__ == '__main__':
+    # Register signal handlers for graceful shutdown
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
     # Start the bot process
     bot_process = start_bot_process()
     
