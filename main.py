@@ -16,8 +16,11 @@ render_env = os.environ.get('RENDER')
 health_check_import = os.environ.get('HEALTH_CHECK_IMPORT', 'false').lower() == 'true'
 
 if render_env and not health_check_import:
-    # If running on Render and not imported by health_check, run the web service directly
-    if __name__ == '__main__':
+    # If running on Render and not imported by health_check, import and run the health check version
+    try:
+        from health_check import app, start_bot_process
+        import threading
+        
         # Set up logging
         logging.basicConfig(
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -25,117 +28,17 @@ if render_env and not health_check_import:
         )
         logger = logging.getLogger(__name__)
         
-        # Import Flask and run web service
-        from flask import Flask, jsonify
-        import signal
-        import subprocess
-        
-        app = Flask(__name__)
-        
-        # Global variable to track bot status
-        bot_status = {
-            "running": False,
-            "last_update": None,
-            "errors": []
-        }
-        
-        bot_process = None
-        
-        def update_bot_status(status, error=None):
-            """Update the bot status."""
-            global bot_status
-            bot_status["running"] = status
-            bot_status["last_update"] = time.time()
-            if error:
-                bot_status["errors"].append(str(error))
-                # Keep only the last 10 errors
-                if len(bot_status["errors"]) > 10:
-                    bot_status["errors"] = bot_status["errors"][-10:]
-        
-        @app.route('/health')
-        def health_check():
-            """Simple health check endpoint."""
-            return jsonify({
-                "status": "healthy",
-                "service": "CapitalX-Telegram-Bot",
-                "bot_running": bot_status["running"],
-                "last_update": bot_status["last_update"],
-                "error_count": len(bot_status["errors"])
-            })
-        
-        @app.route('/status')
-        def status_check():
-            """Detailed status endpoint."""
-            return jsonify({
-                "status": "running" if bot_status["running"] else "stopped",
-                "service": "CapitalX-Telegram-Bot",
-                "environment": os.getenv("ENVIRONMENT", "production"),
-                "bot_status": bot_status
-            })
-        
-        @app.route('/')
-        def home():
-            """Home endpoint with service information."""
-            return jsonify({
-                "message": "CapitalX Telegram Bot Web Service",
-                "description": "This service runs the CapitalX Telegram bot and provides health check endpoints",
-                "endpoints": {
-                    "health": "/health",
-                    "status": "/status",
-                    "info": "/"
-                },
-                "bot_running": bot_status["running"]
-            })
-        
-        def start_bot_process():
-            """Start the Telegram bot in a separate process."""
-            global bot_process
-            try:
-                # Set environment variable to indicate we're running from main
-                env = os.environ.copy()
-                env['HEALTH_CHECK_IMPORT'] = 'true'
-                
-                # Start the bot as a separate process
-                bot_process = subprocess.Popen([
-                    sys.executable, "-c", 
-                    "from main import main; main()"
-                ], env=env)
-                
-                update_bot_status(True)
-                logger.info("Starting Telegram bot in separate process...")
-                return bot_process
-            except Exception as e:
-                logger.error(f"Error starting bot: {e}")
-                update_bot_status(False, e)
-                return None
-        
-        def signal_handler(sig, frame):
-            """Handle shutdown signals."""
-            global bot_process
-            logger.info("Received shutdown signal, terminating bot process...")
+        if __name__ == '__main__':
+            # Start the bot process
+            bot_process = start_bot_process()
             
-            if bot_process:
-                try:
-                    bot_process.terminate()
-                    bot_process.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    bot_process.kill()
-                except Exception as e:
-                    logger.error(f"Error terminating bot process: {e}")
-            
-            sys.exit(0)
-        
-        # Register signal handlers for graceful shutdown
-        signal.signal(signal.SIGINT, signal_handler)
-        signal.signal(signal.SIGTERM, signal_handler)
-        
-        # Start the bot process
-        bot_process = start_bot_process()
-        
-        # Start the web server
-        port = int(os.environ.get('PORT', 8000))
-        logger.info(f"Starting web service on port {port}")
-        app.run(host='0.0.0.0', port=port, threaded=True)
+            # Start the web server
+            port = int(os.environ.get('PORT', 8000))
+            logger.info(f"Starting web service on port {port}")
+            app.run(host='0.0.0.0', port=port, threaded=True)
+    except ImportError as e:
+        print(f"Error importing health_check module: {e}")
+        sys.exit(1)
 else:
     # Original beginner-friendly bot code
     from telegram import Update

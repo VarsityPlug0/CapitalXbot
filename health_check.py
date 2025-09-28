@@ -128,10 +128,9 @@ def start_bot_process():
         env = os.environ.copy()
         env['HEALTH_CHECK_IMPORT'] = 'true'
         
-        # Start the bot as a separate process
+        # Start the bot as a separate process using the main.py file directly
         bot_process = subprocess.Popen([
-            sys.executable, "-c", 
-            "from main import main; main()"
+            sys.executable, "main.py"
         ], env=env)
         
         update_bot_status(True)
