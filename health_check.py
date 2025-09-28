@@ -11,6 +11,8 @@ from flask import Flask, jsonify
 from dotenv import load_dotenv
 import logging
 import sys
+import asyncio
+import concurrent.futures
 
 # Load environment variables
 load_dotenv()
@@ -84,7 +86,14 @@ def run_bot():
             os.environ['HEALTH_CHECK_IMPORT'] = 'true'
             # Import the main function directly without triggering the Render check
             from main import main as bot_main
-            bot_main()
+            
+            # Run the bot in a new event loop
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                bot_main()
+            finally:
+                loop.close()
         else:
             from main import main as bot_main
             bot_main()
