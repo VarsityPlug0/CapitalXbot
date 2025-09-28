@@ -76,8 +76,8 @@ def home():
         "bot_running": bot_status["running"]
     })
 
-def run_bot_in_executor():
-    """Run the Telegram bot in a thread pool executor."""
+def run_bot_in_thread():
+    """Run the Telegram bot in a separate thread with its own event loop."""
     try:
         # Import here to avoid issues with circular imports
         if 'RENDER' in os.environ:
@@ -86,7 +86,14 @@ def run_bot_in_executor():
             os.environ['HEALTH_CHECK_IMPORT'] = 'true'
             # Import the main function directly without triggering the Render check
             from main import main as bot_main
-            bot_main()
+            
+            # Create a new event loop for this thread
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                bot_main()
+            finally:
+                loop.close()
         else:
             from main import main as bot_main
             bot_main()
@@ -96,17 +103,15 @@ def run_bot_in_executor():
         logger.error(f"Error running bot: {e}")
         update_bot_status(False, e)
 
-def start_bot_async():
-    """Start the bot using a thread pool executor."""
-    # Use ThreadPoolExecutor to run the bot in a separate thread
-    executor = ThreadPoolExecutor(max_workers=1)
-    future = executor.submit(run_bot_in_executor)
-    # Don't wait for the result, just let it run
-    return executor, future
+def start_bot_thread():
+    """Start the bot in a separate thread."""
+    bot_thread = threading.Thread(target=run_bot_in_thread, daemon=True)
+    bot_thread.start()
+    return bot_thread
 
 if __name__ == '__main__':
-    # Start the bot
-    executor, future = start_bot_async()
+    # Start the bot in a separate thread
+    bot_thread = start_bot_thread()
     
     # Start the web server
     port = int(os.environ.get('PORT', 8000))
