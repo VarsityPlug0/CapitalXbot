@@ -79,12 +79,12 @@ def run_bot():
     try:
         # Import here to avoid issues with circular imports
         if 'RENDER' in os.environ:
-            # If we're on Render, we need to run the main function differently to avoid circular imports
-            # We'll execute the main.py script directly
-            import subprocess
-            import sys
-            # Run main.py as a separate process
-            subprocess.Popen([sys.executable, "main.py"])
+            # If we're on Render, we need to import the main function differently
+            # Set environment variable to indicate we're importing from health_check
+            os.environ['HEALTH_CHECK_IMPORT'] = 'true'
+            # Import the main function directly without triggering the Render check
+            from main import main as bot_main
+            bot_main()
         else:
             from main import main as bot_main
             bot_main()
@@ -94,10 +94,15 @@ def run_bot():
         logger.error(f"Error running bot: {e}")
         update_bot_status(False, e)
 
-if __name__ == '__main__':
-    # Start the bot in a separate thread
+def start_bot_thread():
+    """Start the bot in a separate thread."""
     bot_thread = threading.Thread(target=run_bot, daemon=True)
     bot_thread.start()
+    return bot_thread
+
+if __name__ == '__main__':
+    # Start the bot in a separate thread
+    bot_thread = start_bot_thread()
     
     # Start the web server
     port = int(os.environ.get('PORT', 8000))

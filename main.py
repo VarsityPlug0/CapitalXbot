@@ -10,11 +10,13 @@ import sys
 from dotenv import load_dotenv
 
 # Check if running on Render
-if os.environ.get('RENDER'):
-    # If running on Render, import and run the health check version
+render_env = os.environ.get('RENDER')
+health_check_import = os.environ.get('HEALTH_CHECK_IMPORT', 'false').lower() == 'true'
+
+if render_env and not health_check_import:
+    # If running on Render and not imported by health_check, import and run the health check version
     try:
-        from health_check import app
-        from health_check import run_bot
+        from health_check import app, start_bot_thread
         import threading
         
         # Set up logging
@@ -26,8 +28,7 @@ if os.environ.get('RENDER'):
         
         if __name__ == '__main__':
             # Start the bot in a separate thread
-            bot_thread = threading.Thread(target=run_bot, daemon=True)
-            bot_thread.start()
+            bot_thread = start_bot_thread()
             
             # Start the web server
             port = int(os.environ.get('PORT', 8000))
@@ -52,8 +53,7 @@ else:
     from beginner_handlers import (
         start_command,
         button_callback,
-        handle_message,
-        main_menu_callback
+        handle_message
     )
     from database import init_database
     from kb import refresh_knowledge_base
@@ -126,8 +126,8 @@ else:
 
         # Add beginner-friendly handlers
         application.add_handler(CommandHandler("start", start_command))
+        # Handle all callback queries with the button_callback function
         application.add_handler(CallbackQueryHandler(button_callback))
-        application.add_handler(CallbackQueryHandler(main_menu_callback, pattern='^(main_menu|back_to_start)$'))
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
         # Add error handler
