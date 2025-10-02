@@ -95,7 +95,7 @@ else:
 
     def run_bot_with_retry():
         """Run the bot with automatic retry on failure."""
-        max_retries = 5
+        max_retries = 10  # Increased retries
         retry_count = 0
         retry_delay = 5  # seconds
         
@@ -133,10 +133,10 @@ else:
                 request = HTTPXRequest(
                     connection_pool_size=8,
                     proxy_url=None,
-                    read_timeout=30,  # Increased timeout
-                    write_timeout=30,
-                    connect_timeout=30,
-                    pool_timeout=30,
+                    read_timeout=45,  # Increased timeout
+                    write_timeout=45,
+                    connect_timeout=45,
+                    pool_timeout=45,
                 )
                 
                 application = Application.builder().token(bot_token).request(request).build()
@@ -159,7 +159,7 @@ else:
                 print("\n🚀 Starting CapitalX Beginner-Friendly Telegram bot...")
                 print("Press Ctrl+C to stop the bot.")
                 
-                application.run_polling()
+                application.run_polling(drop_pending_updates=True)  # Add drop_pending_updates to clear any pending updates
                 
                 # If we reach here, the bot stopped normally
                 return True
@@ -173,6 +173,8 @@ else:
                 # If running on Render, we should exit to let the health check restart us
                 if render_env:
                     logger.info("Exiting due to conflict error on Render environment. Health check will restart the bot.")
+                    # Add a longer delay before exiting to ensure the previous instance has time to stop
+                    time.sleep(10)
                     return False
                 else:
                     # For local development, retry with exponential backoff
@@ -180,7 +182,7 @@ else:
                     if retry_count < max_retries:
                         print(f"Retrying in {retry_delay} seconds...")
                         time.sleep(retry_delay)
-                        retry_delay *= 2  # Exponential backoff
+                        retry_delay = min(retry_delay * 2, 60)  # Exponential backoff, max 60 seconds
                     else:
                         print("Max retries reached. Exiting.")
                         return False
@@ -193,7 +195,7 @@ else:
                 if retry_count < max_retries:
                     print(f"Retrying in {retry_delay} seconds...")
                     time.sleep(retry_delay)
-                    retry_delay *= 2  # Exponential backoff
+                    retry_delay = min(retry_delay * 2, 60)  # Exponential backoff, max 60 seconds
                 else:
                     print("Max retries reached. Exiting.")
                     return False
