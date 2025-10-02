@@ -82,13 +82,15 @@ Our platform offers two ways to start:
 
 I'll help you understand how both options work and guide you through the investment process."""
 
-        # Create simplified beginner-friendly menu
+        # Create simplified beginner-friendly menu with requested options
         keyboard = [
             [InlineKeyboardButton("💰 Investment Options", callback_data="investment_options")],
-            [InlineKeyboardButton("📊 My Investments", callback_data="my_investments")],
+            [InlineKeyboardButton("👋 Welcome & Basics", callback_data="welcome_basics")],
+            [InlineKeyboardButton("🔄 Start with R50", callback_data="start_r50")],
+            [InlineKeyboardButton("🔁 Reinvest Profits", callback_data="reinvest_profits")],
             [InlineKeyboardButton("👥 Referrals", callback_data="referrals")],
-            [InlineKeyboardButton("📤 Withdraw", callback_data="withdraw")],
-            [InlineKeyboardButton("❓ Help & Support", callback_data="help")]
+            [InlineKeyboardButton("🔗 Web Links", callback_data="web_links")],
+            [InlineKeyboardButton("❓ Need Help?", callback_data="help")]
         ]
         
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -162,6 +164,86 @@ We offer several investment plans with different risk levels and return potentia
 • Naspers Plan: R10,000 investment, 60 days, R50,000 returns
 
 *Important Rule:* You can only invest once per plan."""
+        
+        elif query.data == "welcome_basics":
+            response_text = """👋 *Welcome & Basics*
+
+Welcome to CapitalX! Here are the basics you need to know:
+
+*What is CapitalX?*
+CapitalX is an investment platform that helps you grow your money through various investment opportunities.
+
+*How It Works:*
+1. Start with either your R50 bonus or your own money
+2. Choose an investment plan that suits your goals
+3. Watch your investment grow over time
+4. Withdraw your profits or reinvest them for compound growth
+
+*Key Features:*
+• Risk-free R50 bonus for new users
+• Multiple investment tiers with different returns
+• Referral program to earn extra income
+• Secure platform with 24/7 monitoring
+
+Ready to get started?"""
+            keyboard = [
+                [InlineKeyboardButton("Start with R50", callback_data="start_r50")],
+                [InlineKeyboardButton("View Investment Options", callback_data="investment_options")],
+                [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
+            ]
+        
+        elif query.data == "start_r50":
+            response_text = """🔄 *Start with R50 Bonus*
+
+Great choice! Your R50 bonus is a risk-free way to try CapitalX.
+
+*How to Use Your R50 Bonus:*
+1. Your R50 bonus is automatically credited to your account
+2. You can invest it in any available plan
+3. Any profits are yours to keep
+4. The bonus must be used within 7 days
+
+*Terms & Conditions:*
+• Bonus expires in 7 days
+• Can only be used once
+• Profits from bonus investments are withdrawable
+• One bonus per user
+
+Would you like to see investment options for your R50 bonus?"""
+            keyboard = [
+                [InlineKeyboardButton("View Investment Options", callback_data="investment_options")],
+                [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
+            ]
+        
+        elif query.data == "reinvest_profits":
+            response_text = """🔁 *Reinvest Profits*
+
+Compound growth is one of the most powerful ways to build wealth!
+
+*Benefits of Reinvesting:*
+• Accelerated growth through compounding
+• Higher long-term returns
+• Automatic investment processing
+• No additional fees
+
+*How It Works:*
+1. When your investment matures, profits are automatically reinvested
+2. You can choose which plan to reinvest in
+3. Continue growing your money with minimal effort
+4. Track your compounded growth in real-time
+
+*To Set Up Reinvestment:*
+1. Go to My Investments
+2. Select an investment you want to reinvest
+3. Choose "Reinvest Profits" option
+4. Select your preferred reinvestment plan
+
+Would you like to see your current investments?"""
+            keyboard = [
+                [InlineKeyboardButton("My Investments", callback_data="my_investments")],
+                [InlineKeyboardButton("Investment Options", callback_data="investment_options")],
+                [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
+            ]
         
         elif query.data == "my_investments":
             if is_group:
@@ -248,6 +330,70 @@ Share your referral code with friends to earn R10 for each new user who joins!
                         response_text = "❌ Unable to retrieve referral information at this time."
                 else:
                     response_text = "❌ Unable to retrieve user information."
+        
+        elif query.data == "web_links":
+            response_text = """🔗 *Web Links*
+
+Here are the important links for CapitalX:
+
+🌐 *Official Website:*
+https://capitalx-rtn.onrender.com
+
+📱 *Mobile App:*
+Coming soon for iOS and Android
+
+📘 *Knowledge Base:*
+https://capitalx-rtn.onrender.com/knowledge
+
+📞 *Support Center:*
+https://capitalx-rtn.onrender.com/support
+
+📢 *Community Forum:*
+https://capitalx-rtn.onrender.com/community
+
+📧 *Email Support:*
+support@capitalx.com
+
+For any enquiries, please contact our admin: @ShadowMaxxx"""
+            keyboard = [
+                [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
+            ]
+        
+        elif query.data == "help":
+            response_text = """❓ *Need Help?*
+
+I'm here to help you understand CapitalX! Here are the ways you can get assistance:
+
+*Quick Help:*
+• Use the menu buttons to explore topics
+• Ask specific questions about investing
+• Check our website for detailed guides
+
+*Contact Support:*
+• Visit https://capitalx-rtn.onrender.com for the official website
+• Email support@capitalx.com for technical issues
+• Check our FAQ section for common questions
+• Contact our admin: @ShadowMaxxx for enquiries
+
+Is there something specific you'd like to know about?"""
+        
+        # Handle main menu navigation
+        elif query.data == "main_menu" or query.data == "back_to_start":
+            # Show the main menu again
+            keyboard = [
+                [InlineKeyboardButton("💰 Investment Options", callback_data="investment_options")],
+                [InlineKeyboardButton("👋 Welcome & Basics", callback_data="welcome_basics")],
+                [InlineKeyboardButton("🔄 Start with R50", callback_data="start_r50")],
+                [InlineKeyboardButton("🔁 Reinvest Profits", callback_data="reinvest_profits")],
+                [InlineKeyboardButton("👥 Referrals", callback_data="referrals")],
+                [InlineKeyboardButton("🔗 Web Links", callback_data="web_links")],
+                [InlineKeyboardButton("❓ Need Help?", callback_data="help")]
+            ]
+            
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await query.edit_message_text("📋 *Main Menu*", reply_markup=reply_markup, parse_mode='Markdown')
+            return
         
         elif query.data == "withdraw":
             if is_group:
@@ -339,39 +485,6 @@ Your withdrawal will be processed within 24-48 hours."""
                 [InlineKeyboardButton("Back to Withdraw Menu", callback_data="withdraw")],
                 [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
             ]
-        
-        elif query.data == "help":
-            response_text = """❓ *Help & Support*
-
-I'm here to help you understand CapitalX! Here are the ways you can get assistance:
-
-*Quick Help:*
-• Use the menu buttons to explore topics
-• Ask specific questions about investing
-• Check our website for detailed guides
-
-*Contact Support:*
-• Visit https://capitalx-rtn.onrender.com for the official website
-• Email support@capitalx.com for technical issues
-• Check our FAQ section for common questions
-
-Is there something specific you'd like to know about?"""
-        
-        # Handle main menu navigation
-        elif query.data == "main_menu" or query.data == "back_to_start":
-            # Show the main menu again
-            keyboard = [
-                [InlineKeyboardButton("💰 Investment Options", callback_data="investment_options")],
-                [InlineKeyboardButton("📊 My Investments", callback_data="my_investments")],
-                [InlineKeyboardButton("👥 Referrals", callback_data="referrals")],
-                [InlineKeyboardButton("📤 Withdraw", callback_data="withdraw")],
-                [InlineKeyboardButton("❓ Help & Support", callback_data="help")]
-            ]
-            
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            await query.edit_message_text("📋 *Main Menu*", reply_markup=reply_markup, parse_mode='Markdown')
-            return
         
         else:
             response_text = "I'm not sure what you're looking for. Please use the menu buttons to navigate."
