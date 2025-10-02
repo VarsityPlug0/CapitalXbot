@@ -172,6 +172,15 @@ else:
                 
                 # If running on Render, we should wait longer and try to resolve the conflict
                 if render_env:
+                    # Increment retry count for conflict errors on Render
+                    retry_count += 1
+                    
+                    # Check if we've exceeded maximum retries
+                    if retry_count >= max_retries:
+                        print("Max retries reached. Exiting.")
+                        logger.info("Max retries reached for conflict resolution on Render. Exiting.")
+                        return False
+                    
                     logger.info("Conflict detected on Render environment. Waiting for previous instance to stop...")
                     # Wait progressively longer each time to allow previous instance to fully stop
                     wait_time = min(30 + (retry_count * 10), 120)  # Max 2 minutes
@@ -179,8 +188,7 @@ else:
                     print(f"Waiting {wait_time} seconds for previous instance to stop...")
                     time.sleep(wait_time)
                     
-                    # Increment retry count for conflict errors on Render
-                    retry_count += 1
+                    # Continue to retry
                     continue
                 else:
                     # For local development, retry with exponential backoff
