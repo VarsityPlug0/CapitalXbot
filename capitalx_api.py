@@ -66,6 +66,16 @@ class CapitalXAPI:
         try:
             logger.info(f"Making {method} request to {url}")
             response = self.session.request(method, url, **kwargs)
+            
+            # Handle 404 errors specifically
+            if response.status_code == 404:
+                logger.warning(f"API endpoint not found: {url}")
+                return {
+                    "success": False,
+                    "error": f"Endpoint not found: {url}",
+                    "status_code": 404
+                }
+            
             response.raise_for_status()
             
             # Try to parse JSON response

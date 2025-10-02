@@ -388,9 +388,11 @@ Please send me a direct message to view your referral information."""
                     referral_info = get_user_referral_info(user.id)
                     if referral_info["status"] == "success":
                         referred_users = get_referred_users(user.id)
+                        # Escape any special characters in the referral code
+                        referral_code = referral_info['referral_code'].replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace(']', '\\]').replace('(', '\\(').replace(')', '\\)').replace('~', '\\~').replace('`', '\\`').replace('>', '\\>').replace('#', '\\#').replace('+', '\\+').replace('-', '\\-').replace('=', '\\=').replace('|', '\\|').replace('{', '\\{').replace('}', '\\}').replace('.', '\\.').replace('!', '\\!')
                         response_text = f"""👥 *Your Referral Info*
 
-*Referral Code:* `{referral_info['referral_code']}`
+*Referral Code:* `{referral_code}`
 *Bonus Earned:* R{referral_info['bonus_earned']}
 *Referred Users:* {referral_info['referred_users']}
 
@@ -402,7 +404,9 @@ Share your referral code with friends to earn R10 for each new user who joins!
                             for ref_user in referred_users:
                                 name = ref_user.get('first_name', 'Unknown') or 'Unknown'
                                 if ref_user.get('username'):
-                                    name += f" (@{ref_user['username']})"
+                                    # Escape special characters in username
+                                    username = ref_user['username'].replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace(']', '\\]').replace('(', '\\(').replace(')', '\\)').replace('~', '\\~').replace('`', '\\`').replace('>', '\\>').replace('#', '\\#').replace('+', '\\+').replace('-', '\\-').replace('=', '\\=').replace('|', '\\|').replace('{', '\\{').replace('}', '\\}').replace('.', '\\.').replace('!', '\\!')
+                                    name += f" (@{username})"
                                 response_text += f"• {name}\n"
                         else:
                             response_text += "No referred users yet."

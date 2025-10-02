@@ -383,3 +383,92 @@ def get_withdrawal_history(chat_id: int, limit: int = 10) -> List[Dict[str, Any]
         except Exception as db_error:
             logger.error(f"Error getting withdrawal history from database for user {chat_id}: {db_error}")
             return []
+
+# Import the CapitalX API client
+from capitalx_api import get_user_balance as api_get_user_balance, request_withdrawal as api_request_withdrawal, get_withdrawal_history as api_get_withdrawal_history
+from database import get_db_connection, get_user_active_investments
+from user_management import get_user_balance_info
+
+logger = logging.getLogger(__name__)
+
+class CapitalXAPI:
+    def __init__(self, base_url: str, api_key: str):
+        self.base_url = base_url
+        self.api_key = api_key
+
+    def _make_request(self, method: str, endpoint: str, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Make a request to the CapitalX API.
+        
+        Args:
+            method: HTTP method (GET, POST, etc.)
+            endpoint: API endpoint
+            data: Data to send with the request (for POST requests)
+            
+        Returns:
+            Dictionary with API response
+        """
+        import requests
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        url = f"{self.base_url}{endpoint}"
+        
+        try:
+            if method == "GET":
+                response = requests.get(url, headers=headers)
+            elif method == "POST":
+                response = requests.post(url, headers=headers, json=data)
+            else:
+                return {
+                    "success": False,
+                    "error": "Unsupported HTTP method"
+                }
+            
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+    def get_user_balance(self, user_id: str) -> Dict[str, Any]:
+        """
+        Get user's balance.
+        
+        Args:
+            user_id: User identifier
+            
+        Returns:
+            Dictionary with user's balance
+        """
+        return self._make_request("GET", f"/api/users/{user_id}/balance")
+
+    def request_withdrawal(self, user_id: str, amount: float) -> Dict[str, Any]:
+        """
+        Request a withdrawal for a user.
+        
+        Args:
+            user_id: User identifier
+            amount: Amount to withdraw
+            
+        Returns:
+            Dictionary with withdrawal request status
+        """
+        return self._make_request("POST", f"/api/users/{user_id}/withdrawals", {"amount": amount})
+
+    def get_withdrawal_history(self, user_id: str) -> Dict[str, Any]:
+        """
+        Get user's withdrawal history.
+        
+        Args:
+            user_id: User identifier
+            
+        Returns:
+            Dictionary with withdrawal history
+        """
+        return self._make_request("GET", f"/api/users/{user_id}/withdrawals")
