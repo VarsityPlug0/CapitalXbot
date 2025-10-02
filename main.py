@@ -12,6 +12,9 @@ import asyncio
 from dotenv import load_dotenv
 from telegram.error import Conflict
 
+# Import scheduler for automated monitoring
+from scheduler import start_scheduler, stop_scheduler
+
 # Check if running on Render
 render_env = os.environ.get('RENDER')
 health_check_import = os.environ.get('HEALTH_CHECK_IMPORT', 'false').lower() == 'true'
@@ -147,6 +150,10 @@ else:
                 # Add error handler
                 application.add_error_handler(error_handler)
 
+                # Start the scheduler for automated monitoring
+                start_scheduler()
+                logger.info("Investment scheduler started")
+
                 # Start the bot
                 logger.info("Starting beginner-friendly bot...")
                 print("\n🚀 Starting CapitalX Beginner-Friendly Telegram bot...")
@@ -185,10 +192,17 @@ else:
         except KeyboardInterrupt:
             logger.info("Bot stopped by user")
             print("\n🛑 Bot stopped by user")
+            # Stop the scheduler
+            stop_scheduler()
         except Exception as e:
             logger.error(f"Fatal error in main: {e}")
             print(f"\n❌ Fatal error: {e}")
+            # Stop the scheduler
+            stop_scheduler()
             sys.exit(1)
+        finally:
+            # Ensure scheduler is stopped
+            stop_scheduler()
 
     if __name__ == '__main__':
         main()

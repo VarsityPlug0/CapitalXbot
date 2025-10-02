@@ -10,9 +10,35 @@ from telegram.constants import ChatType
 from telegram.error import BadRequest, Conflict
 import logging
 
+# Import the CapitalX API client
+from capitalx_api import get_investment_plans, initialize_api_client, get_user_balance
 from database import add_user, log_command, record_investment, get_user_investments
+from investment_analytics import (
+    get_real_time_performance, 
+    get_market_trends, 
+    calculate_risk_score, 
+    get_portfolio_rebalancing_recommendations,
+    export_investment_data
+)
+from user_management import (
+    get_user_referral_info, 
+    get_referred_users, 
+    get_user_accounts, 
+    create_user_account,
+    get_user_balance_info
+)
+from withdrawal_system import (
+    get_withdrawal_settings, 
+    update_withdrawal_settings, 
+    request_withdrawal, 
+    get_withdrawal_history,
+    check_auto_withdrawal_eligibility
+)
 
 logger = logging.getLogger(__name__)
+
+# Initialize the CapitalX API client
+initialize_api_client()
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle the /start command with beginner-friendly welcome message."""
@@ -64,6 +90,11 @@ I'll help you understand how both options work and guide you through the investm
             [InlineKeyboardButton("📈 Investment Options", callback_data="investment_options")],
             [InlineKeyboardButton("🔄 Reinvest Profits", callback_data="reinvest")],
             [InlineKeyboardButton("📊 My Investments", callback_data="my_investments")],
+            [InlineKeyboardButton("📈 Performance", callback_data="performance")],
+            [InlineKeyboardButton("🔔 Alerts", callback_data="alerts")],
+            [InlineKeyboardButton("👥 Referrals", callback_data="referrals")],
+            [InlineKeyboardButton("📤 Withdraw", callback_data="withdraw")],
+            [InlineKeyboardButton("⚙️ Settings", callback_data="settings")],
             [InlineKeyboardButton("❓ Need Help?", callback_data="help")],
             [InlineKeyboardButton("🌐 Website Links", callback_data="links")]
         ]
@@ -105,13 +136,15 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         
         # Different responses based on button pressed
         response_text = ""
+        keyboard = []
+        
         if query.data == "welcome":
             response_text = """🌟 *Welcome to CapitalX!*
 
 CapitalX is an innovative investment platform that helps you grow your money through AI-powered trading strategies.
 
 *How it works:*
-1. Start with a small investment (from R70)
+1. Start with a small investment (from R60)
 2. Our AI trades on your behalf 24/7
 3. Watch your investment grow over time
 4. Withdraw your profits anytime
@@ -142,12 +175,12 @@ Great choice! Starting with your R50 bonus is a risk-free way to try CapitalX.
 
 *Here's how it works:*
 1. Your R50 bonus is automatically added to your account
-2. You can invest it in any of our tier plans
+2. You can invest it in any of our investment plans
 3. Any profits are yours to keep
 4. You can withdraw profits anytime
 
 *Important Rules:*
-• You can only invest once per tier
+• You can only invest once per plan
 • The bonus must be used within 7 days
 • You can combine bonus with your own money for larger investments
 
@@ -161,7 +194,7 @@ In a group setting, I can explain how direct investments work, but for privacy r
 
 *How direct investments work:*
 • Deposit your own money to start investing
-• Choose from our tier investment plans
+• Choose from our investment plans
 • Track your investments and profits
 • Withdraw anytime with low fees
 
@@ -173,7 +206,7 @@ Excellent! Investing your own money gives you full control over your investments
 
 *Here's how it works:*
 1. Deposit money into your CapitalX account
-2. Choose an investment tier that matches your budget
+2. Choose an investment plan that matches your budget
 3. Our AI starts trading on your behalf
 4. Watch your investment grow over time
 
@@ -186,25 +219,39 @@ Excellent! Investing your own money gives you full control over your investments
 Would you like to see the investment options?"""
         
         elif query.data == "investment_options":
-            response_text = """📈 *CapitalX Investment Options*
+            # Get investment plans from the CapitalX API
+            api_response = get_investment_plans()
+            
+            if api_response["success"]:
+                plans = api_response["data"]["plans"]
+                response_text = "*📈 CapitalX Investment Options*\n\n"
+                
+                for plan in plans:
+                    response_text += f"*{plan['name']} ({plan['type']})*\n"
+                    response_text += f"• Investment: R{plan['investment']}\n"
+                    response_text += f"• Duration: {plan['duration_hours']} hours\n"
+                    response_text += f"• Returns: R{plan['returns']}\n\n"
+                
+                response_text += "*Important Rule:* You can only invest once per plan."
+            else:
+                # Fallback to default plans if API fails
+                logger.warning(f"API error getting investment plans: {api_response.get('error')}")
+                response_text = """📈 *CapitalX Investment Options*
 
-We offer a structured 3-stage investment system:
+We offer several investment plans with different risk levels and return potentials:
 
-*Foundation Tier (Beginner Friendly):*
-• R70 - R1,120
-• Perfect for trying the system
+*Short-Term Plans:*
+• Shoprite Plan: R60 investment, 12 hours, R100 returns
 
-*Growth Tier (Intermediate):*
-• R2,240 - R17,920
-• For growing your investment
+*Mid-Term Plans:*
+• MTN Plan: R1,000 investment, 7 days, R4,000 returns
 
-*Premium Tier (Advanced):*
-• R35,840 - R50,000
-• For maximum growth potential
+*Long-Term Plans:*
+• Naspers Plan: R10,000 investment, 60 days, R50,000 returns
 
-*Important Rule:* You can only invest once per tier.
+*Important Rule:* You can only invest once per plan.
 
-Would you like details about a specific tier?"""
+Would you like details about a specific plan?"""
         
         elif query.data == "reinvest":
             response_text = """🔄 *Reinvesting Your Profits*
@@ -214,15 +261,15 @@ CapitalX allows you to reinvest your profits to grow your investment faster!
 *How Reinvestment Works:*
 1. When your investment completes, you receive profits
 2. You can choose to withdraw or reinvest
-3. Reinvesting moves you to the next tier
-4. Each tier doubles your investment amount
+3. Reinvesting moves you to a higher value plan
+4. Each plan offers better returns than the previous
 
 *Example:*
-• Start with R70 (Tier 1)
-• After completion, reinvest R140 (Tier 2)
-• Continue doubling with each reinvestment
+• Start with Shoprite Plan (R60)
+• After completion, reinvest in MTN Plan (R1,000)
+• Continue with higher value plans for greater returns
 
-*Important:* You can only invest once per tier, so plan your reinvestments wisely!"""
+*Important:* You can only invest once per plan, so plan your reinvestments wisely!"""
         
         elif query.data == "my_investments":
             if is_group:
@@ -246,7 +293,7 @@ Please message me directly to view your investments."""
                 if investments:
                     response_text = "*📊 Your Current Investments:*\n\n"
                     for investment in investments:
-                        response_text += f"• Tier {investment['tier_level']}: R{investment['investment_amount']} - {investment['status']}\n"
+                        response_text += f"• {investment['tier_level']}: R{investment['investment_amount']} - {investment['status']}\n"
                     response_text += "\nYou can track your investment progress and projected profits here."
                 else:
                     response_text = """📊 *Your Investments*
@@ -255,10 +302,352 @@ You don't have any active investments yet.
 
 To get started:
 1. Choose between bonus (R50 free) or direct deposit
-2. Select an investment tier
+2. Select an investment plan
 3. Complete your investment
 
 Would you like to start investing now?"""
+        
+        elif query.data == "performance":
+            if is_group:
+                response_text = """📈 *Investment Performance*
+
+For detailed performance data, please message me directly in a private chat.
+
+In a private chat, I can show you:
+• Real-time performance of your investments
+• Profit/loss analysis
+• Market trend information
+• Risk assessment scores
+
+Please send me a direct message to view your performance data."""
+            else:
+                # Get real-time performance data
+                if user:
+                    performance_data = get_real_time_performance(user.id)
+                    if performance_data["status"] == "success":
+                        response_text = f"""📈 *Your Investment Performance*
+
+*Total Invested:* R{performance_data['total_invested']}
+*Current Value:* R{performance_data['total_current_value']}
+*Total Return:* R{performance_data['total_return']} ({performance_data['performance_percentage']}%)
+
+"""
+                        if performance_data['investments']:
+                            response_text += "*Investment Details:*\n"
+                            for inv in performance_data['investments']:
+                                response_text += f"• {inv['tier_level']}: R{inv['invested_amount']} → R{inv['current_value']} ({inv['progress_percentage']}%)\n"
+                        else:
+                            response_text += "No active investments found."
+                    else:
+                        response_text = "❌ Unable to retrieve performance data at this time. Please try again later."
+                else:
+                    response_text = "❌ Unable to retrieve user information."
+        
+        elif query.data == "alerts":
+            if is_group:
+                response_text = """🔔 *Investment Alerts*
+
+For personalized investment alerts, please message me directly in a private chat.
+
+In a private chat, you can:
+• Set up performance alerts
+• Configure risk notifications
+• Enable market trend alerts
+• Customize alert preferences
+
+Please send me a direct message to manage your alerts."""
+            else:
+                response_text = """🔔 *Investment Alerts*
+
+I can send you alerts about:
+• Investment performance changes
+• Risk level updates
+• Market trend shifts
+• Withdrawal opportunities
+
+These alerts help you stay informed about your investments without constantly checking.
+
+To set up alerts, use the Settings menu."""
+        
+        elif query.data == "referrals":
+            if is_group:
+                response_text = """👥 *Referral Program*
+
+For detailed referral information, please message me directly in a private chat.
+
+In a private chat, I can show you:
+• Your unique referral code
+• Referred users
+• Bonus earnings
+• Referral program details
+
+Please send me a direct message to view your referral information."""
+            else:
+                # Get referral information
+                if user:
+                    referral_info = get_user_referral_info(user.id)
+                    if referral_info["status"] == "success":
+                        referred_users = get_referred_users(user.id)
+                        response_text = f"""👥 *Your Referral Info*
+
+*Referral Code:* `{referral_info['referral_code']}`
+*Bonus Earned:* R{referral_info['bonus_earned']}
+*Referred Users:* {referral_info['referred_users']}
+
+Share your referral code with friends to earn R10 for each new user who joins!
+
+*Your Referred Users:*
+"""
+                        if referred_users:
+                            for ref_user in referred_users:
+                                name = ref_user.get('first_name', 'Unknown') or 'Unknown'
+                                if ref_user.get('username'):
+                                    name += f" (@{ref_user['username']})"
+                                response_text += f"• {name}\n"
+                        else:
+                            response_text += "No referred users yet."
+                    else:
+                        response_text = "❌ Unable to retrieve referral information at this time."
+                else:
+                    response_text = "❌ Unable to retrieve user information."
+        
+        elif query.data == "withdraw":
+            if is_group:
+                response_text = """📤 *Withdraw Funds*
+
+For withdrawal options, please message me directly in a private chat.
+
+In a private chat, you can:
+• Request withdrawals
+• Set up auto-withdrawals
+• View withdrawal history
+• Configure withdrawal settings
+
+Please send me a direct message to manage your withdrawals."""
+            else:
+                # Check withdrawal eligibility
+                if user:
+                    withdrawal_check = check_auto_withdrawal_eligibility(user.id)
+                    if withdrawal_check["status"] == "eligible":
+                        response_text = f"""📤 *Withdraw Funds*
+
+You are eligible for withdrawal!
+*Available Profit:* R{withdrawal_check['profit_amount']}
+
+You can:
+1. Withdraw all profits (R{withdrawal_check['profit_amount']})
+2. Withdraw a specific amount
+3. Set up auto-withdrawals
+
+Use the buttons below to proceed."""
+                        keyboard = [
+                            [InlineKeyboardButton("Withdraw All", callback_data="withdraw_all")],
+                            [InlineKeyboardButton("Withdraw Specific Amount", callback_data="withdraw_amount")],
+                            [InlineKeyboardButton("Auto-Withdrawal Settings", callback_data="withdraw_settings")],
+                            [InlineKeyboardButton("Withdrawal History", callback_data="withdraw_history")],
+                            [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
+                        ]
+                    elif withdrawal_check["status"] == "not_eligible":
+                        response_text = f"""📤 *Withdraw Funds*
+
+{withdrawal_check['message']}
+
+You can:
+1. Check withdrawal settings
+2. View withdrawal history
+3. Set up auto-withdrawals for future profits
+
+Use the buttons below to proceed."""
+                        keyboard = [
+                            [InlineKeyboardButton("Withdrawal Settings", callback_data="withdraw_settings")],
+                            [InlineKeyboardButton("Withdrawal History", callback_data="withdraw_history")],
+                            [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
+                        ]
+                    else:
+                        response_text = "❌ Unable to check withdrawal eligibility at this time."
+                        keyboard = [[InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]]
+                else:
+                    response_text = "❌ Unable to retrieve user information."
+                    keyboard = [[InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]]
+        
+        elif query.data == "withdraw_all":
+            if user:
+                withdrawal_result = request_withdrawal(user.id)
+                if withdrawal_result["status"] == "success":
+                    response_text = f"""✅ *Withdrawal Request Submitted*
+
+{withdrawal_result['message']}
+
+Request ID: {withdrawal_result['request_id']}
+Amount: R{withdrawal_result['amount']}
+Method: {withdrawal_result['method']}
+
+Your withdrawal will be processed within 24-48 hours."""
+                else:
+                    response_text = f"❌ *Withdrawal Request Failed*\n\n{withdrawal_result['message']}"
+            else:
+                response_text = "❌ Unable to process withdrawal request."
+            keyboard = [[InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]]
+        
+        elif query.data == "withdraw_settings":
+            if user:
+                settings = get_withdrawal_settings(user.id)
+                if settings["status"] == "success":
+                    status_text = "Enabled" if settings["auto_withdraw_enabled"] else "Disabled"
+                    response_text = f"""⚙️ *Withdrawal Settings*
+
+*Auto-Withdrawal:* {status_text}
+*Threshold:* R{settings['auto_withdraw_threshold']}
+*Method:* {settings['withdrawal_method']}
+
+You can update these settings below."""
+                    keyboard = [
+                        [InlineKeyboardButton("Toggle Auto-Withdrawal", callback_data="toggle_auto_withdraw")],
+                        [InlineKeyboardButton("Change Threshold", callback_data="change_threshold")],
+                        [InlineKeyboardButton("Change Method", callback_data="change_method")],
+                        [InlineKeyboardButton("Back to Withdraw Menu", callback_data="withdraw")],
+                        [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
+                    ]
+                else:
+                    response_text = "❌ Unable to retrieve withdrawal settings."
+                    keyboard = [
+                        [InlineKeyboardButton("Back to Withdraw Menu", callback_data="withdraw")],
+                        [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
+                    ]
+            else:
+                response_text = "❌ Unable to retrieve user information."
+                keyboard = [[InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]]
+        
+        elif query.data == "withdraw_history":
+            if user:
+                history = get_withdrawal_history(user.id, 5)
+                if history:
+                    response_text = "*📤 Withdrawal History*\n\n"
+                    for record in history:
+                        response_text += f"• R{record['amount']} ({record['status']}) - {record['requested_at'][:10]}\n"
+                else:
+                    response_text = "No withdrawal history found."
+                response_text += "\nOnly the 5 most recent withdrawals are shown."
+            else:
+                response_text = "❌ Unable to retrieve user information."
+            keyboard = [
+                [InlineKeyboardButton("Back to Withdraw Menu", callback_data="withdraw")],
+                [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
+            ]
+        
+        elif query.data == "settings":
+            if is_group:
+                response_text = """⚙️ *Settings*
+
+For personalized settings, please message me directly in a private chat.
+
+In a private chat, you can:
+• Configure alert preferences
+• Set up auto-withdrawals
+• Manage accounts
+• Export data
+
+Please send me a direct message to access settings."""
+            else:
+                response_text = """⚙️ *Your Settings*
+
+Manage your CapitalX bot preferences:
+
+• 📈 Performance Alerts
+• 🔔 Risk Notifications
+• 📤 Auto-Withdrawals
+• 📊 Data Export
+• 👥 Account Management
+
+Use the buttons below to configure your preferences."""
+                keyboard = [
+                    [InlineKeyboardButton("Alert Preferences", callback_data="alert_preferences")],
+                    [InlineKeyboardButton("Auto-Withdrawal Settings", callback_data="withdraw_settings")],
+                    [InlineKeyboardButton("Account Management", callback_data="account_management")],
+                    [InlineKeyboardButton("Export Data", callback_data="export_data")],
+                    [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
+                ]
+        
+        elif query.data == "export_data":
+            if user:
+                # Provide export format options
+                response_text = """📊 *Data Export*
+
+Export your investment data in the following formats:
+
+• JSON - Complete data structure
+• CSV - Spreadsheet compatible format
+
+Choose your preferred format below."""
+                keyboard = [
+                    [InlineKeyboardButton("Export as JSON", callback_data="export_json")],
+                    [InlineKeyboardButton("Export as CSV", callback_data="export_csv")],
+                    [InlineKeyboardButton("Back to Settings", callback_data="settings")],
+                    [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
+                ]
+            else:
+                response_text = "❌ Unable to retrieve user information."
+                keyboard = [
+                    [InlineKeyboardButton("Back to Settings", callback_data="settings")],
+                    [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
+                ]
+        
+        elif query.data == "export_json":
+            if user:
+                export_result = export_investment_data(user.id, "json")
+                if export_result["status"] == "success":
+                    # In a real implementation, we would send the file
+                    # For now, we'll just show a message
+                    response_text = """✅ *Data Export Ready*
+
+Your investment data has been exported in JSON format.
+
+In a full implementation, this would be sent as a file attachment.
+
+Sample of exported data:
+```
+{...}
+```
+
+Data includes all your investments, performance metrics, and transaction history."""
+                else:
+                    response_text = f"❌ *Export Failed*\n\n{export_result['message']}"
+            else:
+                response_text = "❌ Unable to process export request."
+            keyboard = [
+                [InlineKeyboardButton("Export as CSV", callback_data="export_csv")],
+                [InlineKeyboardButton("Back to Settings", callback_data="settings")],
+                [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
+            ]
+        
+        elif query.data == "export_csv":
+            if user:
+                export_result = export_investment_data(user.id, "csv")
+                if export_result["status"] == "success":
+                    # In a real implementation, we would send the file
+                    # For now, we'll just show a message
+                    response_text = """✅ *Data Export Ready*
+
+Your investment data has been exported in CSV format.
+
+In a full implementation, this would be sent as a file attachment.
+
+Sample of exported data:
+```
+tier_level,investment_amount,expected_return,duration_hours,invested_at,status
+1,70.0,140.0,168,2023-01-01 10:00:00,active
+```
+
+Data includes all your investments, performance metrics, and transaction history."""
+                else:
+                    response_text = f"❌ *Export Failed*\n\n{export_result['message']}"
+            else:
+                response_text = "❌ Unable to process export request."
+            keyboard = [
+                [InlineKeyboardButton("Export as JSON", callback_data="export_json")],
+                [InlineKeyboardButton("Back to Settings", callback_data="settings")],
+                [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
+            ]
         
         elif query.data == "help":
             response_text = """❓ *Need Help?*
@@ -305,6 +694,11 @@ Always make sure you're using official links to protect your account."""
                 [InlineKeyboardButton("📈 Investment Options", callback_data="investment_options")],
                 [InlineKeyboardButton("🔄 Reinvest Profits", callback_data="reinvest")],
                 [InlineKeyboardButton("📊 My Investments", callback_data="my_investments")],
+                [InlineKeyboardButton("📈 Performance", callback_data="performance")],
+                [InlineKeyboardButton("🔔 Alerts", callback_data="alerts")],
+                [InlineKeyboardButton("👥 Referrals", callback_data="referrals")],
+                [InlineKeyboardButton("📤 Withdraw", callback_data="withdraw")],
+                [InlineKeyboardButton("⚙️ Settings", callback_data="settings")],
                 [InlineKeyboardButton("❓ Need Help?", callback_data="help")],
                 [InlineKeyboardButton("🌐 Website Links", callback_data="links")]
             ]
@@ -319,10 +713,12 @@ Always make sure you're using official links to protect your account."""
         
         # Add navigation options at the end (except for main menu requests)
         if query.data != "main_menu" and query.data != "back_to_start":
-            keyboard = [
-                [InlineKeyboardButton("📋 Main Menu", callback_data="main_menu")],
-                [InlineKeyboardButton("👋 Back to Start", callback_data="back_to_start")]
-            ]
+            # If we haven't already set a keyboard, use the default navigation
+            if not keyboard:
+                keyboard = [
+                    [InlineKeyboardButton("📋 Main Menu", callback_data="main_menu")],
+                    [InlineKeyboardButton("👋 Back to Start", callback_data="back_to_start")]
+                ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
             try:
@@ -380,17 +776,54 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             else:
                 response_text = f"{greeting}! 👋\n\nI'm your CapitalX Beginner Helper. How can I assist you today?"
         
-        elif any(word in message_lower for word in ["invest", "investment", "tier"]):
+        elif any(word in message_lower for word in ["invest", "investment", "plan"]):
             if is_group:
                 response_text = "I see you're interested in investments! For detailed information about investment options, please send /start or message me directly."
             else:
-                response_text = "I'd be happy to help you learn about investing with CapitalX! Our platform offers a structured 3-stage investment system:\n\n1. Foundation Tier (R70 - R1,120) - Perfect for beginners\n2. Growth Tier (R2,240 - R17,920) - For intermediate investors\n3. Premium Tier (R35,840 - R50,000) - For advanced investors\n\nWould you like to know more about a specific tier?"
+                # Get investment plans from the CapitalX API
+                api_response = get_investment_plans()
+                
+                if api_response["success"]:
+                    plans = api_response["data"]["plans"]
+                    response_text = "I'd be happy to help you learn about investing with CapitalX! Our platform offers several investment plans:\n\n"
+                    
+                    for plan in plans:
+                        response_text += f"{plan['name']} ({plan['type']}):\n"
+                        response_text += f"  Investment: R{plan['investment']}\n"
+                        response_text += f"  Duration: {plan['duration_hours']} hours\n"
+                        response_text += f"  Returns: R{plan['returns']}\n\n"
+                    
+                    response_text += "Would you like to know more about a specific plan?"
+                else:
+                    # Fallback to default plans if API fails
+                    logger.warning(f"API error getting investment plans: {api_response.get('error')}")
+                    response_text = "I'd be happy to help you learn about investing with CapitalX! Our platform offers several investment plans with different risk levels and return potentials:\n\n1. Shoprite Plan (Short-Term): R60 investment, 12 hours, R100 returns\n2. MTN Plan (Mid-Term): R1,000 investment, 7 days, R4,000 returns\n3. Naspers Plan (Long-Term): R10,000 investment, 60 days, R50,000 returns\n\nWould you like to know more about a specific plan?"
         
         elif any(word in message_lower for word in ["bonus", "free", "r50"]):
             if is_group:
                 response_text = "You mentioned the bonus! For details about using your R50 free bonus, please send /start or message me directly."
             else:
-                response_text = "Great! Our R50 bonus is a risk-free way to try CapitalX. You can use it to invest in any of our tier plans, and any profits are yours to keep. The bonus must be used within 7 days.\n\nWould you like to learn how to use your bonus?"
+                response_text = "Great! Our R50 bonus is a risk-free way to try CapitalX. You can use it to invest in any of our plans, and any profits are yours to keep. The bonus must be used within 7 days.\n\nWould you like to learn how to use your bonus?"
+        
+        elif any(word in message_lower for word in ["performance", "profit", "return"]):
+            if is_group:
+                response_text = "Interested in investment performance? Please send /start to see the menu, or message me directly for personalized performance data."
+            else:
+                # Get real-time performance data
+                if user:
+                    performance_data = get_real_time_performance(user.id)
+                    if performance_data["status"] == "success":
+                        response_text = f"Here's your investment performance:\n\nTotal Invested: R{performance_data['total_invested']}\nCurrent Value: R{performance_data['total_current_value']}\nTotal Return: R{performance_data['total_return']} ({performance_data['performance_percentage']}%)"
+                    else:
+                        response_text = "I'm having trouble retrieving your performance data right now. Please try again later or check through the menu."
+                else:
+                    response_text = "I'm having trouble retrieving your performance data right now. Please try again later or check through the menu."
+        
+        elif any(word in message_lower for word in ["withdraw", "cash out"]):
+            if is_group:
+                response_text = "For withdrawal options, please send /start to see the menu, or message me directly for personalized withdrawal options."
+            else:
+                response_text = "You can manage withdrawals through the Withdraw menu. Would you like me to take you there? Send /start and select the Withdraw option."
         
         elif any(word in message_lower for word in ["help", "support", "confused"]):
             if is_group:

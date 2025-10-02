@@ -89,6 +89,61 @@ def init_database():
                 )
             """)
             
+            # Create referrals table for referral tracking
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS referrals (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    referrer_chat_id INTEGER NOT NULL,
+                    referred_chat_id INTEGER UNIQUE,
+                    referral_code TEXT NOT NULL,
+                    bonus_earned REAL DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (referrer_chat_id) REFERENCES users (chat_id),
+                    FOREIGN KEY (referred_chat_id) REFERENCES users (chat_id)
+                )
+            """)
+            
+            # Create user_accounts table for multi-account support
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS user_accounts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    chat_id INTEGER NOT NULL,
+                    account_name TEXT NOT NULL,
+                    account_type TEXT DEFAULT 'primary',
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (chat_id) REFERENCES users (chat_id)
+                )
+            """)
+            
+            # Create withdrawal_settings table for withdrawal preferences
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS withdrawal_settings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    chat_id INTEGER UNIQUE NOT NULL,
+                    auto_withdraw_enabled BOOLEAN DEFAULT FALSE,
+                    auto_withdraw_threshold REAL DEFAULT 100,
+                    withdrawal_method TEXT DEFAULT 'bank_transfer',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (chat_id) REFERENCES users (chat_id)
+                )
+            """)
+            
+            # Create withdrawal_requests table for tracking withdrawal requests
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS withdrawal_requests (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    chat_id INTEGER NOT NULL,
+                    amount REAL NOT NULL,
+                    method TEXT NOT NULL,
+                    status TEXT DEFAULT 'pending',
+                    requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    processed_at TIMESTAMP,
+                    FOREIGN KEY (chat_id) REFERENCES users (chat_id)
+                )
+            """)
+            
             conn.commit()
             logger.info("Database tables created successfully")
             
