@@ -11,12 +11,14 @@ We enhanced the conflict handling in [main.py](file:///c:/Users/money/HustleProj
 3. **Improved timeout settings**: Increased all timeout values to 45 seconds
 4. **Enhanced Render-specific handling**: Implemented progressive waiting for previous instance to stop
 5. **Better exponential backoff**: Maximum limit of 60 seconds for retry delays
+6. **Fixed retry limit checking**: Properly handle retry limits to prevent infinite retries
 
 ## Improved Approach
 Instead of immediately exiting on Render when a conflict is detected, the bot now:
 1. Waits progressively longer periods (30 seconds to 2 minutes) for the previous instance to fully stop
 2. Continues retrying rather than exiting immediately
 3. Gives the Telegram API time to release the connection from the previous instance
+4. Properly checks retry limits to prevent infinite retries
 
 ## Result
 The bot now successfully handles deployment conflicts:
