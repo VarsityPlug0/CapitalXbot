@@ -164,12 +164,27 @@ else:
                 # If we reach here, the bot stopped normally
                 return True
                 
-            except Conflict:
-                logger.error("Conflict error: Another bot instance is running. Please stop other instances.")
+            except Conflict as e:
+                logger.error(f"Conflict error: Another bot instance is running. Please stop other instances. Error: {e}")
                 print("\n❌ Conflict error: Another bot instance is running.")
                 print("Please make sure only one instance of the bot is running.")
                 print("Check if the bot is running on Render or another local instance.")
-                return False
+                
+                # If running on Render, we should exit to let the health check restart us
+                if render_env:
+                    logger.info("Exiting due to conflict error on Render environment. Health check will restart the bot.")
+                    return False
+                else:
+                    # For local development, retry with exponential backoff
+                    retry_count += 1
+                    if retry_count < max_retries:
+                        print(f"Retrying in {retry_delay} seconds...")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2  # Exponential backoff
+                    else:
+                        print("Max retries reached. Exiting.")
+                        return False
+                        
             except Exception as e:
                 retry_count += 1
                 logger.error(f"Unexpected error (attempt {retry_count}/{max_retries}): {e}")
