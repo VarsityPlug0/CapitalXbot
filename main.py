@@ -95,7 +95,7 @@ else:
 
     def run_bot_with_retry():
         """Run the bot with automatic retry on failure."""
-        max_retries = 10  # Increased retries
+        max_retries = 15  # Increased retries
         retry_count = 0
         retry_delay = 5  # seconds
         
@@ -170,12 +170,18 @@ else:
                 print("Please make sure only one instance of the bot is running.")
                 print("Check if the bot is running on Render or another local instance.")
                 
-                # If running on Render, we should exit to let the health check restart us
+                # If running on Render, we should wait longer and try to resolve the conflict
                 if render_env:
-                    logger.info("Exiting due to conflict error on Render environment. Health check will restart the bot.")
-                    # Add a longer delay before exiting to ensure the previous instance has time to stop
-                    time.sleep(10)
-                    return False
+                    logger.info("Conflict detected on Render environment. Waiting for previous instance to stop...")
+                    # Wait progressively longer each time to allow previous instance to fully stop
+                    wait_time = min(30 + (retry_count * 10), 120)  # Max 2 minutes
+                    logger.info(f"Waiting {wait_time} seconds before retry...")
+                    print(f"Waiting {wait_time} seconds for previous instance to stop...")
+                    time.sleep(wait_time)
+                    
+                    # Increment retry count for conflict errors on Render
+                    retry_count += 1
+                    continue
                 else:
                     # For local development, retry with exponential backoff
                     retry_count += 1
