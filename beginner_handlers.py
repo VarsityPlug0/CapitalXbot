@@ -82,21 +82,13 @@ Our platform offers two ways to start:
 
 I'll help you understand how both options work and guide you through the investment process."""
 
-        # Create beginner-friendly menu
+        # Create simplified beginner-friendly menu
         keyboard = [
-            [InlineKeyboardButton("👋 Welcome & Basics", callback_data="welcome")],
-            [InlineKeyboardButton("💰 Start with Bonus (R50 Free)", callback_data="bonus_path")],
-            [InlineKeyboardButton("💳 Start with Your Money", callback_data="direct_path")],
-            [InlineKeyboardButton("📈 Investment Options", callback_data="investment_options")],
-            [InlineKeyboardButton("🔄 Reinvest Profits", callback_data="reinvest")],
+            [InlineKeyboardButton("💰 Investment Options", callback_data="investment_options")],
             [InlineKeyboardButton("📊 My Investments", callback_data="my_investments")],
-            [InlineKeyboardButton("📈 Performance", callback_data="performance")],
-            [InlineKeyboardButton("🔔 Alerts", callback_data="alerts")],
             [InlineKeyboardButton("👥 Referrals", callback_data="referrals")],
             [InlineKeyboardButton("📤 Withdraw", callback_data="withdraw")],
-            [InlineKeyboardButton("⚙️ Settings", callback_data="settings")],
-            [InlineKeyboardButton("❓ Need Help?", callback_data="help")],
-            [InlineKeyboardButton("🌐 Website Links", callback_data="links")]
+            [InlineKeyboardButton("❓ Help & Support", callback_data="help")]
         ]
         
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -138,87 +130,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         response_text = ""
         keyboard = []
         
-        if query.data == "welcome":
-            response_text = """🌟 *Welcome to CapitalX!*
-
-CapitalX is an innovative investment platform that helps you grow your money through AI-powered trading strategies.
-
-*How it works:*
-1. Start with a small investment (from R60)
-2. Our AI trades on your behalf 24/7
-3. Watch your investment grow over time
-4. Withdraw your profits anytime
-
-*Key Benefits:*
-✅ No trading experience needed
-✅ AI-powered strategies
-✅ Flexible withdrawals
-✅ Transparent fee structure"""
-            
-        elif query.data == "bonus_path":
-            if is_group:
-                response_text = """💰 *Using Your R50 Bonus*
-
-In a group setting, I can explain how the bonus works, but for privacy reasons, I recommend continuing this conversation in a private chat with me.
-
-*How the R50 bonus works:*
-• Get R50 free when you join CapitalX
-• Use it to try our investment system risk-free
-• You can withdraw any profits you make
-• The bonus must be used within 7 days
-
-To track your bonus investments, please message me directly."""
-            else:
-                response_text = """💰 *Using Your R50 Bonus*
-
-Great choice! Starting with your R50 bonus is a risk-free way to try CapitalX.
-
-*Here's how it works:*
-1. Your R50 bonus is automatically added to your account
-2. You can invest it in any of our investment plans
-3. Any profits are yours to keep
-4. You can withdraw profits anytime
-
-*Important Rules:*
-• You can only invest once per plan
-• The bonus must be used within 7 days
-• You can combine bonus with your own money for larger investments
-
-Would you like to see the investment options?"""
-        
-        elif query.data == "direct_path":
-            if is_group:
-                response_text = """💳 *Investing Your Own Money*
-
-In a group setting, I can explain how direct investments work, but for privacy reasons, I recommend continuing this conversation in a private chat with me.
-
-*How direct investments work:*
-• Deposit your own money to start investing
-• Choose from our investment plans
-• Track your investments and profits
-• Withdraw anytime with low fees
-
-To track your investments, please message me directly."""
-            else:
-                response_text = """💳 *Investing Your Own Money*
-
-Excellent! Investing your own money gives you full control over your investments.
-
-*Here's how it works:*
-1. Deposit money into your CapitalX account
-2. Choose an investment plan that matches your budget
-3. Our AI starts trading on your behalf
-4. Watch your investment grow over time
-
-*Benefits of Direct Investment:*
-• Full control over your investment amount
-• No time limits on your funds
-• Combine with bonus for larger investments
-• Track all investments in one place
-
-Would you like to see the investment options?"""
-        
-        elif query.data == "investment_options":
+        if query.data == "investment_options":
             # Get investment plans from the CapitalX API
             api_response = get_investment_plans()
             
@@ -249,27 +161,7 @@ We offer several investment plans with different risk levels and return potentia
 *Long-Term Plans:*
 • Naspers Plan: R10,000 investment, 60 days, R50,000 returns
 
-*Important Rule:* You can only invest once per plan.
-
-Would you like details about a specific plan?"""
-        
-        elif query.data == "reinvest":
-            response_text = """🔄 *Reinvesting Your Profits*
-
-CapitalX allows you to reinvest your profits to grow your investment faster!
-
-*How Reinvestment Works:*
-1. When your investment completes, you receive profits
-2. You can choose to withdraw or reinvest
-3. Reinvesting moves you to a higher value plan
-4. Each plan offers better returns than the previous
-
-*Example:*
-• Start with Shoprite Plan (R60)
-• After completion, reinvest in MTN Plan (R1,000)
-• Continue with higher value plans for greater returns
-
-*Important:* You can only invest once per plan, so plan your reinvestments wisely!"""
+*Important Rule:* You can only invest once per plan."""
         
         elif query.data == "my_investments":
             if is_group:
@@ -305,69 +197,11 @@ To get started:
 2. Select an investment plan
 3. Complete your investment
 
-Would you like to start investing now?"""
-        
-        elif query.data == "performance":
-            if is_group:
-                response_text = """📈 *Investment Performance*
-
-For detailed performance data, please message me directly in a private chat.
-
-In a private chat, I can show you:
-• Real-time performance of your investments
-• Profit/loss analysis
-• Market trend information
-• Risk assessment scores
-
-Please send me a direct message to view your performance data."""
-            else:
-                # Get real-time performance data
-                if user:
-                    performance_data = get_real_time_performance(user.id)
-                    if performance_data["status"] == "success":
-                        response_text = f"""📈 *Your Investment Performance*
-
-*Total Invested:* R{performance_data['total_invested']}
-*Current Value:* R{performance_data['total_current_value']}
-*Total Return:* R{performance_data['total_return']} ({performance_data['performance_percentage']}%)
-
-"""
-                        if performance_data['investments']:
-                            response_text += "*Investment Details:*\n"
-                            for inv in performance_data['investments']:
-                                response_text += f"• {inv['tier_level']}: R{inv['invested_amount']} → R{inv['current_value']} ({inv['progress_percentage']}%)\n"
-                        else:
-                            response_text += "No active investments found."
-                    else:
-                        response_text = "❌ Unable to retrieve performance data at this time. Please try again later."
-                else:
-                    response_text = "❌ Unable to retrieve user information."
-        
-        elif query.data == "alerts":
-            if is_group:
-                response_text = """🔔 *Investment Alerts*
-
-For personalized investment alerts, please message me directly in a private chat.
-
-In a private chat, you can:
-• Set up performance alerts
-• Configure risk notifications
-• Enable market trend alerts
-• Customize alert preferences
-
-Please send me a direct message to manage your alerts."""
-            else:
-                response_text = """🔔 *Investment Alerts*
-
-I can send you alerts about:
-• Investment performance changes
-• Risk level updates
-• Market trend shifts
-• Withdrawal opportunities
-
-These alerts help you stay informed about your investments without constantly checking.
-
-To set up alerts, use the Settings menu."""
+Would you like to see investment options?"""
+                    keyboard = [
+                        [InlineKeyboardButton("View Investment Options", callback_data="investment_options")],
+                        [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
+                    ]
         
         elif query.data == "referrals":
             if is_group:
@@ -441,13 +275,11 @@ You are eligible for withdrawal!
 You can:
 1. Withdraw all profits (R{withdrawal_check['profit_amount']})
 2. Withdraw a specific amount
-3. Set up auto-withdrawals
 
 Use the buttons below to proceed."""
                         keyboard = [
                             [InlineKeyboardButton("Withdraw All", callback_data="withdraw_all")],
                             [InlineKeyboardButton("Withdraw Specific Amount", callback_data="withdraw_amount")],
-                            [InlineKeyboardButton("Auto-Withdrawal Settings", callback_data="withdraw_settings")],
                             [InlineKeyboardButton("Withdrawal History", callback_data="withdraw_history")],
                             [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
                         ]
@@ -457,13 +289,11 @@ Use the buttons below to proceed."""
 {withdrawal_check['message']}
 
 You can:
-1. Check withdrawal settings
-2. View withdrawal history
-3. Set up auto-withdrawals for future profits
+1. View withdrawal history
+2. Check withdrawal settings
 
 Use the buttons below to proceed."""
                         keyboard = [
-                            [InlineKeyboardButton("Withdrawal Settings", callback_data="withdraw_settings")],
                             [InlineKeyboardButton("Withdrawal History", callback_data="withdraw_history")],
                             [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
                         ]
@@ -493,35 +323,6 @@ Your withdrawal will be processed within 24-48 hours."""
                 response_text = "❌ Unable to process withdrawal request."
             keyboard = [[InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]]
         
-        elif query.data == "withdraw_settings":
-            if user:
-                settings = get_withdrawal_settings(user.id)
-                if settings["status"] == "success":
-                    status_text = "Enabled" if settings["auto_withdraw_enabled"] else "Disabled"
-                    response_text = f"""⚙️ *Withdrawal Settings*
-
-*Auto-Withdrawal:* {status_text}
-*Threshold:* R{settings['auto_withdraw_threshold']}
-*Method:* {settings['withdrawal_method']}
-
-You can update these settings below."""
-                    keyboard = [
-                        [InlineKeyboardButton("Toggle Auto-Withdrawal", callback_data="toggle_auto_withdraw")],
-                        [InlineKeyboardButton("Change Threshold", callback_data="change_threshold")],
-                        [InlineKeyboardButton("Change Method", callback_data="change_method")],
-                        [InlineKeyboardButton("Back to Withdraw Menu", callback_data="withdraw")],
-                        [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
-                    ]
-                else:
-                    response_text = "❌ Unable to retrieve withdrawal settings."
-                    keyboard = [
-                        [InlineKeyboardButton("Back to Withdraw Menu", callback_data="withdraw")],
-                        [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
-                    ]
-            else:
-                response_text = "❌ Unable to retrieve user information."
-                keyboard = [[InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]]
-        
         elif query.data == "withdraw_history":
             if user:
                 history = get_withdrawal_history(user.id, 5)
@@ -539,122 +340,8 @@ You can update these settings below."""
                 [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
             ]
         
-        elif query.data == "settings":
-            if is_group:
-                response_text = """⚙️ *Settings*
-
-For personalized settings, please message me directly in a private chat.
-
-In a private chat, you can:
-• Configure alert preferences
-• Set up auto-withdrawals
-• Manage accounts
-• Export data
-
-Please send me a direct message to access settings."""
-            else:
-                response_text = """⚙️ *Your Settings*
-
-Manage your CapitalX bot preferences:
-
-• 📈 Performance Alerts
-• 🔔 Risk Notifications
-• 📤 Auto-Withdrawals
-• 📊 Data Export
-• 👥 Account Management
-
-Use the buttons below to configure your preferences."""
-                keyboard = [
-                    [InlineKeyboardButton("Alert Preferences", callback_data="alert_preferences")],
-                    [InlineKeyboardButton("Auto-Withdrawal Settings", callback_data="withdraw_settings")],
-                    [InlineKeyboardButton("Account Management", callback_data="account_management")],
-                    [InlineKeyboardButton("Export Data", callback_data="export_data")],
-                    [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
-                ]
-        
-        elif query.data == "export_data":
-            if user:
-                # Provide export format options
-                response_text = """📊 *Data Export*
-
-Export your investment data in the following formats:
-
-• JSON - Complete data structure
-• CSV - Spreadsheet compatible format
-
-Choose your preferred format below."""
-                keyboard = [
-                    [InlineKeyboardButton("Export as JSON", callback_data="export_json")],
-                    [InlineKeyboardButton("Export as CSV", callback_data="export_csv")],
-                    [InlineKeyboardButton("Back to Settings", callback_data="settings")],
-                    [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
-                ]
-            else:
-                response_text = "❌ Unable to retrieve user information."
-                keyboard = [
-                    [InlineKeyboardButton("Back to Settings", callback_data="settings")],
-                    [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
-                ]
-        
-        elif query.data == "export_json":
-            if user:
-                export_result = export_investment_data(user.id, "json")
-                if export_result["status"] == "success":
-                    # In a real implementation, we would send the file
-                    # For now, we'll just show a message
-                    response_text = """✅ *Data Export Ready*
-
-Your investment data has been exported in JSON format.
-
-In a full implementation, this would be sent as a file attachment.
-
-Sample of exported data:
-```
-{...}
-```
-
-Data includes all your investments, performance metrics, and transaction history."""
-                else:
-                    response_text = f"❌ *Export Failed*\n\n{export_result['message']}"
-            else:
-                response_text = "❌ Unable to process export request."
-            keyboard = [
-                [InlineKeyboardButton("Export as CSV", callback_data="export_csv")],
-                [InlineKeyboardButton("Back to Settings", callback_data="settings")],
-                [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
-            ]
-        
-        elif query.data == "export_csv":
-            if user:
-                export_result = export_investment_data(user.id, "csv")
-                if export_result["status"] == "success":
-                    # In a real implementation, we would send the file
-                    # For now, we'll just show a message
-                    response_text = """✅ *Data Export Ready*
-
-Your investment data has been exported in CSV format.
-
-In a full implementation, this would be sent as a file attachment.
-
-Sample of exported data:
-```
-tier_level,investment_amount,expected_return,duration_hours,invested_at,status
-1,70.0,140.0,168,2023-01-01 10:00:00,active
-```
-
-Data includes all your investments, performance metrics, and transaction history."""
-                else:
-                    response_text = f"❌ *Export Failed*\n\n{export_result['message']}"
-            else:
-                response_text = "❌ Unable to process export request."
-            keyboard = [
-                [InlineKeyboardButton("Export as JSON", callback_data="export_json")],
-                [InlineKeyboardButton("Back to Settings", callback_data="settings")],
-                [InlineKeyboardButton("Back to Main Menu", callback_data="main_menu")]
-            ]
-        
         elif query.data == "help":
-            response_text = """❓ *Need Help?*
+            response_text = """❓ *Help & Support*
 
 I'm here to help you understand CapitalX! Here are the ways you can get assistance:
 
@@ -670,41 +357,15 @@ I'm here to help you understand CapitalX! Here are the ways you can get assistan
 
 Is there something specific you'd like to know about?"""
         
-        elif query.data == "links":
-            response_text = """🌐 *CapitalX Links*
-
-Here are the important links you need:
-
-*Official Website:* https://capitalx-rtn.onrender.com
-*Registration:* https://capitalx-rtn.onrender.com/register
-*Login:* https://capitalx-rtn.onrender.com/login
-*FAQ:* https://capitalx-rtn.onrender.com/faq
-*Support:* https://capitalx-rtn.onrender.com/support
-
-*Social Media:*
-• Telegram: @CapitalXOfficial
-• Twitter: @CapitalXPlatform
-• Facebook: /CapitalXPlatform
-
-Always make sure you're using official links to protect your account."""
-        
         # Handle main menu navigation
         elif query.data == "main_menu" or query.data == "back_to_start":
             # Show the main menu again
             keyboard = [
-                [InlineKeyboardButton("👋 Welcome & Basics", callback_data="welcome")],
-                [InlineKeyboardButton("💰 Start with Bonus (R50 Free)", callback_data="bonus_path")],
-                [InlineKeyboardButton("💳 Start with Your Money", callback_data="direct_path")],
-                [InlineKeyboardButton("📈 Investment Options", callback_data="investment_options")],
-                [InlineKeyboardButton("🔄 Reinvest Profits", callback_data="reinvest")],
+                [InlineKeyboardButton("💰 Investment Options", callback_data="investment_options")],
                 [InlineKeyboardButton("📊 My Investments", callback_data="my_investments")],
-                [InlineKeyboardButton("📈 Performance", callback_data="performance")],
-                [InlineKeyboardButton("🔔 Alerts", callback_data="alerts")],
                 [InlineKeyboardButton("👥 Referrals", callback_data="referrals")],
                 [InlineKeyboardButton("📤 Withdraw", callback_data="withdraw")],
-                [InlineKeyboardButton("⚙️ Settings", callback_data="settings")],
-                [InlineKeyboardButton("❓ Need Help?", callback_data="help")],
-                [InlineKeyboardButton("🌐 Website Links", callback_data="links")]
+                [InlineKeyboardButton("❓ Help & Support", callback_data="help")]
             ]
             
             reply_markup = InlineKeyboardMarkup(keyboard)
@@ -720,8 +381,7 @@ Always make sure you're using official links to protect your account."""
             # If we haven't already set a keyboard, use the default navigation
             if not keyboard:
                 keyboard = [
-                    [InlineKeyboardButton("📋 Main Menu", callback_data="main_menu")],
-                    [InlineKeyboardButton("👋 Back to Start", callback_data="back_to_start")]
+                    [InlineKeyboardButton("📋 Main Menu", callback_data="main_menu")]
                 ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             
