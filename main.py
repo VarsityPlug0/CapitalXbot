@@ -67,6 +67,8 @@ else:
         client_bot_button_handler,
         client_bot_message_handler
     )
+    # Import broadcast handler
+    from handlers import broadcast_command
     from database import init_database
     from kb import refresh_knowledge_base
 
@@ -150,6 +152,7 @@ else:
                 # Add beginner-friendly handlers
                 application.add_handler(CommandHandler("start", start_command))
                 application.add_handler(CommandHandler("clientbot", client_bot_command))
+                application.add_handler(CommandHandler("broadcast", broadcast_command))
                 # Handle all callback queries with the button_callback function
                 application.add_handler(CallbackQueryHandler(button_callback))
                 application.add_handler(CallbackQueryHandler(client_bot_button_handler))

@@ -90,6 +90,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 /tiers - View detailed investment tiers
 /issues - Common problems and solutions
 /clientbot - Launch the Client Assistant
+/broadcast - Send advertisements to all users (admin only)
 
 Quick Reply Buttons:
 • About CapitalX - Platform overview
@@ -176,6 +177,65 @@ async def search_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         log_error(logger, "search_command", e)
         if update.message:
             await update.message.reply_text("Sorry, something went wrong with the search. Please try again.")
+
+async def broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle the /broadcast command to send advertisements to all users."""
+    try:
+        if not update.effective_chat or not update.message:
+            return
+            
+        chat_id = update.effective_chat.id
+        
+        # Check if user is admin (for now, we'll use a simple check)
+        # In a production environment, you'd want a more robust admin check
+        user = update.effective_user
+        if not user or user.id not in [7777724958]:  # Example admin ID from logs
+            await update.message.reply_text("❌ You don't have permission to use this command.")
+            return
+        
+        # Parse command arguments
+        if not context.args:
+            await update.message.reply_text(
+                "📢 *Advertisement Broadcast*\n\n"
+                "Usage: `/broadcast <message>`\n\n"
+                "Example: `/broadcast Check out our new investment plans!`\n\n"
+                "The message will be sent to all users every 10 minutes for the next hour."
+            )
+            return
+        
+        # Join all arguments to form the message
+        message = ' '.join(context.args)
+        
+        # Log the command
+        log_command(chat_id, f"/broadcast {message[:50]}...")
+        
+        # Import scheduler and start the broadcast
+        from scheduler import schedule_advertisement_broadcast
+        
+        # Schedule the broadcast (every 10 minutes for 1 hour)
+        task_id = schedule_advertisement_broadcast(
+            message=message,
+            interval_minutes=10,
+            duration_hours=1
+        )
+        
+        response = (
+            f"✅ *Advertisement Broadcast Started*\n\n"
+            f"Message: {message}\n\n"
+            f"Schedule:\n"
+            f"• Frequency: Every 10 minutes\n"
+            f"• Duration: 1 hour\n"
+            f"• Task ID: {task_id}\n\n"
+            f"Users will start receiving this message shortly."
+        )
+        
+        await update.message.reply_text(response, parse_mode='Markdown')
+        logger.info(f"Advertisement broadcast started by user {chat_id}")
+        
+    except Exception as e:
+        log_error(logger, "broadcast_command", e)
+        if update.message:
+            await update.message.reply_text("Sorry, something went wrong starting the broadcast. Please try again.")
 
 # ------------------------------
 # Button Handlers
