@@ -6,6 +6,7 @@ Implements enhanced user assistance features for navigating the CapitalX platfor
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
+from telegram.error import Conflict
 from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
@@ -340,6 +341,10 @@ What would you like to know?"""
             await query.edit_message_text(response_text, reply_markup=reply_markup, parse_mode='Markdown')
         logger.info(f"Client bot button handled: {data} for user {user.id}")
         
+    except Conflict:
+        logger.error("Conflict error in client_bot_button_handler: Another bot instance is running")
+        # Don't send error message as it might cause another conflict
+        pass
     except Exception as e:
         logger.error(f"Error in client_bot_button_handler: {e}")
         # Try to send error message but don't fail if we can't
@@ -737,6 +742,10 @@ What would you like to know? You can also use the buttons below for quick access
         await update.message.reply_text(response_text, reply_markup=reply_markup, parse_mode='Markdown')
         logger.info(f"Client bot message handled for user {user.id}: {message_text[:30]}...")
         
+    except Conflict:
+        logger.error("Conflict error in client_bot_message_handler: Another bot instance is running")
+        # Don't send error message as it might cause another conflict
+        pass
     except Exception as e:
         logger.error(f"Error in client_bot_message_handler: {e}")
         # Try to send error message but don't fail if we can't

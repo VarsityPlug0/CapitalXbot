@@ -123,7 +123,7 @@ class TestCapitalXAPI(unittest.TestCase):
             "success": True,
             "data": {
                 "plans": [
-                    {"id": "shoprite", "name": "Shoprite Plan", "investment": 60, "returns": 100}
+                    {"id": "shoprite", "name": "Shoprite Plan", "investment": 60, "returns": 100, "duration_hours": 12}
                 ]
             }
         }
@@ -132,6 +132,7 @@ class TestCapitalXAPI(unittest.TestCase):
         
         self.assertTrue(result["success"])
         self.assertIn("plans", result["data"])
+        # Check if it tries the API endpoint first
         mock_make_request.assert_called_once_with("GET", "/api/investment-plans")
     
     @patch('capitalx_api.CapitalXAPI._make_request')
