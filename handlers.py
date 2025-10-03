@@ -89,6 +89,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 /search [query] - Search the knowledge base
 /tiers - View detailed investment tiers
 /issues - Common problems and solutions
+/clientbot - Launch the Client Assistant
 
 Quick Reply Buttons:
 • About CapitalX - Platform overview

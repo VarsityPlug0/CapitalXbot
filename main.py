@@ -61,6 +61,12 @@ else:
         button_callback,
         handle_message
     )
+    # Import client bot handlers
+    from client_bot import (
+        client_bot_command,
+        client_bot_button_handler,
+        client_bot_message_handler
+    )
     from database import init_database
     from kb import refresh_knowledge_base
 
@@ -143,9 +149,12 @@ else:
 
                 # Add beginner-friendly handlers
                 application.add_handler(CommandHandler("start", start_command))
+                application.add_handler(CommandHandler("clientbot", client_bot_command))
                 # Handle all callback queries with the button_callback function
                 application.add_handler(CallbackQueryHandler(button_callback))
+                application.add_handler(CallbackQueryHandler(client_bot_button_handler))
                 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+                application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, client_bot_message_handler))
 
                 # Add error handler
                 application.add_error_handler(error_handler)

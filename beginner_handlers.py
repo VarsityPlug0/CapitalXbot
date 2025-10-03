@@ -90,6 +90,7 @@ I'll help you understand how both options work and guide you through the investm
             [InlineKeyboardButton("🔁 Reinvest Profits", callback_data="reinvest_profits")],
             [InlineKeyboardButton("👥 Referrals", callback_data="referrals")],
             [InlineKeyboardButton("🔗 Web Links", callback_data="web_links")],
+            [InlineKeyboardButton("🤖 Client Assistant", callback_data="client_assistant")],
             [InlineKeyboardButton("❓ Need Help?", callback_data="help")]
         ]
         
@@ -373,9 +374,17 @@ I'm here to help you understand CapitalX! Here are the ways you can get assistan
 • Visit https://capitalx-rtn.onrender.com for the official website
 • Email support@capitalx.com for technical issues
 • Check our FAQ section for common questions
-• Contact our admin: @ShadowMaxxx for enquiries
+• Contact our admin: @ShadowMaxxx
 
 Is there something specific you'd like to know about?"""
+        
+        elif query.data == "client_assistant":
+            # Import and call the client bot command
+            from client_bot import client_bot_command
+            # Create a mock update with the /clientbot command
+            context.args = []
+            await client_bot_command(update, context)
+            return
         
         # Handle main menu navigation
         elif query.data == "main_menu" or query.data == "back_to_start":
@@ -387,6 +396,7 @@ Is there something specific you'd like to know about?"""
                 [InlineKeyboardButton("🔁 Reinvest Profits", callback_data="reinvest_profits")],
                 [InlineKeyboardButton("👥 Referrals", callback_data="referrals")],
                 [InlineKeyboardButton("🔗 Web Links", callback_data="web_links")],
+                [InlineKeyboardButton("🤖 Client Assistant", callback_data="client_assistant")],
                 [InlineKeyboardButton("❓ Need Help?", callback_data="help")]
             ]
             
