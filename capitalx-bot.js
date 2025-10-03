@@ -26,16 +26,20 @@ class CapitalXBot {
             investmentPlans: 'https://capitalx-rtn.onrender.com/investment-plans/',
             tiers: 'https://capitalx-rtn.onrender.com/tiers/',
             referral: 'https://capitalx-rtn.onrender.com/referral/',
-            profile: 'https://capitalx-rtn.onrender.com/profile/'
+            profile: 'https://capitalx-rtn.onrender.com/profile/',
+            support: 'https://capitalx-rtn.onrender.com/support/'
         };
         
         // Quick responses
         this.quickResponses = [
+            'Sign Up',
+            'Log In',
             'Deposit Process',
             'Withdrawal Process',
             'Investment Plans',
             'Wallet Management',
             'Referral Program',
+            'Profile Management',
             'Navigation Help'
         ];
         
@@ -186,28 +190,55 @@ class CapitalXBot {
         // Pattern matching for intent recognition
         let response = '';
         
-        if (lowerText.includes('deposit') || lowerText.includes('add money') || lowerText.includes('fund')) {
+        // Registration/Sign up related questions
+        if (lowerText.includes('sign up') || lowerText.includes('register') || lowerText.includes('create account')) {
+            response = this.getSignUpResponse();
+        } 
+        // Login related questions
+        else if (lowerText.includes('log in') || lowerText.includes('login') || lowerText.includes('sign in')) {
+            response = this.getLoginResponse();
+        }
+        // Deposit related questions
+        else if (lowerText.includes('deposit') || lowerText.includes('add money') || lowerText.includes('fund')) {
             response = this.getDepositResponse();
-        } else if (lowerText.includes('withdraw') || lowerText.includes('take money') || lowerText.includes('cash out')) {
+        }
+        // Withdrawal related questions
+        else if (lowerText.includes('withdraw') || lowerText.includes('take money') || lowerText.includes('cash out')) {
             response = this.getWithdrawalResponse();
-        } else if (lowerText.includes('invest') || lowerText.includes('investment') || lowerText.includes('plan') || lowerText.includes('tier')) {
+        }
+        // Investment related questions
+        else if (lowerText.includes('invest') || lowerText.includes('investment') || lowerText.includes('plan') || lowerText.includes('tier')) {
             response = this.getInvestmentResponse();
-        } else if (lowerText.includes('wallet') || lowerText.includes('balance') || lowerText.includes('transaction')) {
+        }
+        // Wallet related questions
+        else if (lowerText.includes('wallet') || lowerText.includes('balance') || lowerText.includes('transaction')) {
             response = this.getWalletResponse();
-        } else if (lowerText.includes('refer') || lowerText.includes('referral') || lowerText.includes('friend') || lowerText.includes('earn')) {
+        }
+        // Referral related questions
+        else if (lowerText.includes('refer') || lowerText.includes('referral') || lowerText.includes('friend') || lowerText.includes('earn')) {
             response = this.getReferralResponse();
-        } else if (lowerText.includes('navigate') || lowerText.includes('find') || lowerText.includes('where is') || lowerText.includes('page') || lowerText.includes('menu')) {
+        }
+        // Profile related questions
+        else if (lowerText.includes('profile') || lowerText.includes('account') || lowerText.includes('settings')) {
+            response = this.getProfileResponse();
+        }
+        // Navigation related questions
+        else if (lowerText.includes('navigate') || lowerText.includes('find') || lowerText.includes('where is') || lowerText.includes('page') || lowerText.includes('menu')) {
             response = this.getNavigationResponse();
-        } else {
+        }
+        else {
             // Default response
             response = `I'm your CapitalX Assistant, here to help you navigate our platform!
 
 I can help you with:
+• Registration and account setup
+• Login process
 • Deposit process
 • Withdrawal process
 • Investment plans
 • Wallet management
 • Referral program
+• Profile management
 • Platform navigation
 
 What would you like to know?`;
@@ -219,12 +250,68 @@ What would you like to know?`;
         }, 500);
     }
     
+    getSignUpResponse() {
+        return `📝 *How to Sign Up for CapitalX*
+
+1️⃣ Visit the Registration Page
+   • Go to: ${this.urls.register}
+   • Or click "Start for Free" on the home page
+
+2️⃣ Fill Out the Registration Form
+   • Enter your full name
+   • Provide a valid email address
+   • Enter your phone number
+   • Create a secure password
+
+3️⃣ Verify Your Email
+   • Check your email inbox for a verification message
+   • Click the verification link in the email
+   • If you don't see it, check your spam folder
+
+4️⃣ Complete Your Profile
+   • Log in to your new account
+   • Add any additional profile information
+   • Set up two-factor authentication (optional but recommended)
+
+5️⃣ Get Your Bonus
+   • As a new user, you'll receive an R50 bonus
+   • This bonus can be used to try our investment plans
+   • Bonus must be used within 7 days
+
+🔗 Registration Link: ${this.urls.register}
+
+Need help with any specific step in the registration process?`;
+    }
+    
+    getLoginResponse() {
+        return `🔐 *How to Log In to CapitalX*
+
+1️⃣ Visit the Login Page
+   • Go to: ${this.urls.login}
+   • Or click "Login" in the navigation menu
+
+2️⃣ Enter Your Credentials
+   • Enter the email you used during registration
+   • Enter your password
+
+3️⃣ Two-Factor Authentication (if enabled)
+   • If you've enabled 2FA, enter the code from your authenticator app
+   • Or use a backup code if you've generated them
+
+4️⃣ Access Your Dashboard
+   • After successful login, you'll be redirected to your dashboard
+   • From here you can access all platform features
+
+🔗 Login Link: ${this.urls.login}
+
+Forgot your password? Click "Forgot Password" on the login page to reset it.`;
+    }
+    
     getDepositResponse() {
-        return `💳 *Deposit Process*
+        return `💳 *How to Make a Deposit*
 
-To add funds to your CapitalX wallet:
-
-1️⃣ Navigate to Wallet
+1️⃣ Navigate to Your Wallet
+   • Log in to your account
    • Go to your dashboard
    • Click on "Wallet" in the navigation menu
    • Or visit: ${this.urls.wallet}
@@ -243,15 +330,19 @@ To add funds to your CapitalX wallet:
 
 4️⃣ Confirmation
    • Your deposit will be processed within minutes
-   • Funds will appear in your wallet balance`;
+   • Funds will appear in your wallet balance
+   • You'll receive an email confirmation
+
+🔗 Wallet Link: ${this.urls.wallet}
+
+Need help with a specific payment method?`;
     }
     
     getWithdrawalResponse() {
-        return `📤 *Withdrawal Process*
+        return `📤 *How to Withdraw Funds*
 
-To withdraw your funds from CapitalX:
-
-1️⃣ Access Wallet
+1️⃣ Access Your Wallet
+   • Log in to your account
    • Go to your dashboard
    • Click on "Wallet" in the navigation menu
    • Or visit: ${this.urls.wallet}
@@ -259,7 +350,11 @@ To withdraw your funds from CapitalX:
 2️⃣ Request Withdrawal
    • Click the "Withdraw Funds" button
    • Enter withdrawal amount (minimum R50)
-   • Provide your banking details
+   • Provide your banking details:
+     - Bank name
+     - Account holder name
+     - Account number
+     - Branch code
 
 3️⃣ Processing
    • Withdrawal requests are processed within 1-3 business days
@@ -269,35 +364,46 @@ To withdraw your funds from CapitalX:
    • Funds will be transferred to your provided bank account
    • Processing times may vary by bank
 
-Important: You must deposit at least 50% of your total earnings before withdrawing.`;
+Important: You must deposit at least 50% of your total earnings before withdrawing.
+
+🔗 Wallet Link: ${this.urls.wallet}
+
+Need help with banking details or processing times?`;
     }
     
     getInvestmentResponse() {
-        return `📈 *Investment Plans*
+        return `📈 *How to Make an Investment*
 
-CapitalX offers a tiered investment system with 10 plans across 3 stages:
+1️⃣ Ensure Sufficient Funds
+   • Check your wallet balance
+   • Make a deposit if needed (minimum R50)
+   • Visit: ${this.urls.wallet}
 
-*Stage 1: Foundation Tier (R70 - R1,120)*
-Perfect for beginners to get started with small investments.
+2️⃣ Go to Investment Plans
+   • From your dashboard, click "Investment Plans"
+   • Or visit: ${this.urls.investmentPlans}
 
-*Stage 2: Growth Tier (R2,240 - R17,920)*
-For intermediate investors looking to scale their investments.
+3️⃣ Select a Plan
+   • Review the available investment tiers:
+     - Foundation Tier (R70 - R1,120)
+     - Growth Tier (R2,240 - R17,920)
+     - Premium Tier (R35,840 - R50,000)
+   • Choose a plan that matches your budget
 
-*Stage 3: Premium Tier (R35,840 - R50,000)*
-For advanced investors with significant capital.
+4️⃣ Make Investment
+   • Click "Invest Now" on your chosen plan
+   • Confirm investment amount and expected returns
+   • Review the investment duration
+   • Click "Confirm Investment"
 
-Each plan offers:
-• Guaranteed 100% return on investment
-• Progressive duration (12 hours to 6 days)
-• One investment per plan allowed
-• Compound growth opportunities
+5️⃣ Track Your Investment
+   • View your investments in your dashboard
+   • Track progress and expected returns
+   • Investments run for their specified duration
 
-To invest:
-1. Ensure your wallet has sufficient funds
-2. Go to Investment Plans page: ${this.urls.investmentPlans}
-3. Select a plan that matches your budget
-4. Click "Invest Now" button
-5. Confirm investment amount and expected returns`;
+🔗 Investment Plans: ${this.urls.investmentPlans}
+
+Want to know more about a specific investment tier?`;
     }
     
     getWalletResponse() {
@@ -305,79 +411,133 @@ To invest:
 
 Your CapitalX wallet is your financial hub for all transactions:
 
-*Wallet Features:*
-• Real-time balance tracking
-• Transaction history with detailed records
-• Pending deposits tracking
-• Separate tracking of bonus and real balances
+1️⃣ Access Your Wallet
+   • Log in to your account
+   • Click on "Wallet" in the navigation menu
+   • Or visit: ${this.urls.wallet}
 
-*Wallet Operations:*
-• Deposit Funds: Add money to your account
-• Withdraw Funds: Transfer earnings to your bank account
-• View History: See all transactions
-• Track Pending: Monitor deposit status
+2️⃣ View Your Balance
+   • See your current wallet balance
+   • Check bonus vs real money balance
+   • View pending deposits
 
-To access your wallet:
-• Visit: ${this.urls.wallet}
-• Or navigate from your dashboard
+3️⃣ Transaction History
+   • See all deposits and withdrawals
+   • View dates, amounts, and statuses
+   • Download transaction records
+
+4️⃣ Wallet Operations
+   • Deposit Funds: Add money to your account
+   • Withdraw Funds: Transfer earnings to your bank
+   • Track Pending: Monitor deposit status
 
 *Wallet Security:*
 • All transactions are encrypted
 • Two-factor authentication available
 • Detailed transaction records
-• 24/7 monitoring for suspicious activity`;
+• 24/7 monitoring for suspicious activity
+
+🔗 Wallet Link: ${this.urls.wallet}
+
+Need help with a specific wallet function?`;
     }
     
     getReferralResponse() {
-        return `👥 *Referral Program*
+        return `👥 *How to Use the Referral Program*
 
-Earn extra income by inviting friends to CapitalX!
+1️⃣ Get Your Referral Link
+   • Log in to your account
+   • Go to the Referral page
+   • Or visit: ${this.urls.referral}
 
-*How It Works:*
-1. Go to your Referral page: ${this.urls.referral}
-2. Copy your unique referral link
-3. Share it with friends and family
-4. Earn R10 for each friend who signs up and makes a deposit
+2️⃣ Share Your Link
+   • Copy your unique referral link
+   • Share it with friends and family
+   • Use social media, email, or messaging apps
 
-*Referral Benefits:*
-• R10 bonus for each successful referral
-• No limit to how many people you can refer
-• Track your referrals in real-time
-• Bonus earnings are withdrawable
+3️⃣ Earn Rewards
+   • Earn R10 for each friend who signs up
+   • Earn additional bonuses when they make deposits
+   • Track your referrals in real-time
+
+4️⃣ Withdraw Earnings
+   • Referral bonuses are withdrawable
+   • Follow the normal withdrawal process
+   • Minimum withdrawal is R50
 
 *Best Practices:*
 • Share your link on social media
 • Tell friends and family about CapitalX
 • Encourage referrals to make their first deposit quickly
-• Check your referral dashboard regularly for updates`;
+• Check your referral dashboard regularly for updates
+
+🔗 Referral Page: ${this.urls.referral}
+
+Want to know more about maximizing your referral earnings?`;
+    }
+    
+    getProfileResponse() {
+        return `👤 *How to Manage Your Profile*
+
+1️⃣ Access Your Profile
+   • Log in to your account
+   • Click on your name or avatar in the top right
+   • Select "Profile" from the dropdown menu
+   • Or visit: ${this.urls.profile}
+
+2️⃣ View Profile Information
+   • See your personal details
+   • Check your account status
+   • View your investment level
+   • See security settings
+
+3️⃣ Edit Profile Details
+   • Update your contact information
+   • Change your password
+   • Set up two-factor authentication
+   • Update banking details for withdrawals
+
+4️⃣ Security Settings
+   • Enable two-factor authentication
+   • Review login history
+   • Set up backup codes
+   • Update security questions
+
+🔗 Profile Page: ${this.urls.profile}
+
+Need help with a specific profile setting?`;
     }
     
     getNavigationResponse() {
-        return `🧭 *Navigation Help*
+        return `🧭 *How to Navigate CapitalX*
 
 Here are the key pages on the CapitalX platform and how to access them:
 
-🌐 *Main Pages:*
-• Home Page: ${this.urls.home}
-• Registration: ${this.urls.register}
-• Login: ${this.urls.login}
-• Dashboard: ${this.urls.dashboard}
+1️⃣ Main Pages:
+   • Home Page: ${this.urls.home}
+   • Registration: ${this.urls.register}
+   • Login: ${this.urls.login}
+   • Dashboard: ${this.urls.dashboard}
 
-💼 *Account Pages:*
-• Wallet: ${this.urls.wallet}
-• Profile: ${this.urls.profile}
-• Referral: ${this.urls.referral}
+2️⃣ Account Pages:
+   • Wallet: ${this.urls.wallet}
+   • Profile: ${this.urls.profile}
+   • Referral: ${this.urls.referral}
 
-💰 *Financial Pages:*
-• Deposit: ${this.urls.deposit}
-• Withdraw: ${this.urls.withdraw}
-• Investment Plans: ${this.urls.investmentPlans}
-• Tiers: ${this.urls.tiers}
+3️⃣ Financial Pages:
+   • Deposit: ${this.urls.deposit}
+   • Withdraw: ${this.urls.withdraw}
+   • Investment Plans: ${this.urls.investmentPlans}
+   • Tiers: ${this.urls.tiers}
 
-❓ *Support Pages:*
-• Support Center: https://capitalx-rtn.onrender.com/support/
-• FAQ: https://capitalx-rtn.onrender.com/faq/
-• Contact Us: https://capitalx-rtn.onrender.com/contact/`;
+4️⃣ Support Pages:
+   • Support Center: ${this.urls.support}
+   • FAQ: https://capitalx-rtn.onrender.com/faq/
+   • Contact Us: https://capitalx-rtn.onrender.com/contact/
+
+Having trouble finding something? Try using the search function on the website or ask me directly!
+
+Need help with a specific page?`;
     }
     
     renderMessages() {

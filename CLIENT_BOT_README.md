@@ -14,12 +14,15 @@ This is a client-side JavaScript bot designed to help users navigate the Capital
 ## How It Works
 The bot uses pattern matching to understand user queries and provide relevant responses. It can help with:
 
-1. **Deposit Process** - Explains how to add funds to your wallet
-2. **Withdrawal Process** - Guides users through withdrawing funds
-3. **Investment Plans** - Provides information about available investment options
-4. **Wallet Management** - Assists with wallet-related tasks
-5. **Referral Program** - Explains how to earn money through referrals
-6. **Navigation Help** - Provides direct links to key platform pages
+1. **Registration and Sign Up** - Step-by-step instructions for creating an account
+2. **Login Process** - Guidance for accessing your account
+3. **Deposit Process** - Explains how to add funds to your wallet
+4. **Withdrawal Process** - Guides users through withdrawing funds
+5. **Investment Plans** - Provides information about available investment options
+6. **Wallet Management** - Assists with wallet-related tasks
+7. **Referral Program** - Explains how to earn money through referrals
+8. **Profile Management** - Helps with account settings and security
+9. **Navigation Help** - Provides direct links to key platform pages
 
 ## Integration
 To integrate the bot into your web application:
@@ -40,17 +43,20 @@ The bot is implemented as a JavaScript class that:
 - Adapts to light/dark theme modes based on system preferences
 
 ## Key Response Areas
-- Deposit process explanation
-- Withdrawal process explanation
-- Investment plan details
-- Wallet functionality
-- Referral program information
-- Navigation assistance
+- Registration and account setup with step-by-step instructions
+- Login process guidance
+- Deposit process explanation with detailed steps
+- Withdrawal process explanation with banking details
+- Investment plan details with tier information
+- Wallet functionality with balance and transaction history
+- Referral program information with earning potential
+- Profile management with security settings
+- Navigation assistance with direct links to all pages
 
 ## Expected Bot Behavior
 - Greets users when first opened
 - Understands common queries through keyword matching
-- Provides helpful, accurate responses
+- Provides helpful, accurate responses with detailed instructions
 - Offers navigation links to relevant pages
 - Suggests follow-up questions
 - Works on both desktop and mobile devices
@@ -64,4 +70,4 @@ You can customize the bot by modifying:
 - Response messages in the various response methods
 
 ## Note About This Project
-This repository primarily contains a Telegram bot implementation for CapitalX. The client-side JavaScript bot (`capitalx-bot.js`) is provided as a separate component that could be integrated into a web application. The main Telegram bot functionality has been enhanced with similar assistance features through the `/clientbot` command.
+This repository primarily contains a Telegram bot implementation for CapitalX. The client-side JavaScript bot (`capitalx-bot.js`) is provided as a separate component that could be integrated into a web application. The main Telegram bot functionality has been enhanced with similar assistance features through the `/clientbot` command, which now supports detailed follow-up questions for each feature.
